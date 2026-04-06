@@ -1,6 +1,6 @@
 import { getSession } from './session'
 
-export const API_URL = "https://192.168.1.9:4000"
+export const API_URL = "https://render.com"
 
 type AuthPayload = {
   email: string

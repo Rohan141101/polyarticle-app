@@ -21,7 +21,7 @@ class EventLogger {
   private queue: FeedEvent[] = []
   private MAX_BATCH_SIZE = 5
   private FLUSH_INTERVAL = 5000
-  private API_URL = "https://192.168.1.9:4000/events"
+  private API_URL = "https://render.com/events"
   private sessionId: string
   private token: string | null = null
   private isFlushing = false
