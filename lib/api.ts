@@ -1,6 +1,6 @@
 import { getSession } from './session'
 
-export const API_URL = "https://render.com"
+export const API_URL = "https://polyarticle-app.onrender.com"
 
 type AuthPayload = {
   email: string
