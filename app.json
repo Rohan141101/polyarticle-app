@@ -6,11 +6,13 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
+
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+
     "android": {
       "usesCleartextTraffic": true,
       "package": "com.anonymous.flashfeed",
@@ -21,6 +23,7 @@
       },
       "permissions": []
     },
+
     "ios": {
       "bundleIdentifier": "com.anonymous.flashfeed",
       "buildNumber": "3",
@@ -31,20 +34,26 @@
         }
       }
     },
+
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-2345974289373242~3123605011",
+          "iosAppId": "ca-app-pub-2345974289373242~2759641888"
+        }
+      ]
     ],
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+
+    "assetBundlePatterns": ["**/*"],
+
     "extra": {
       "eas": {
         "projectId": "9ab60785-2236-4a55-96c5-1df3e484d1f8"
       }
     },
+
     "owner": "rohan141101"
-  },
-  "react-native-google-mobile-ads": {
-    "android_app_id": "ca-app-pub-2345974289373242~3123605011"
   }
 }

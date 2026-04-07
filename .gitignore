@@ -1,5 +1,8 @@
 node_modules/
 .expo/
+.gradle-bin/
+.gradle-home*/
+.gradle-local-test/
 dist/
 build/
 android/

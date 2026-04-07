@@ -6,6 +6,7 @@ import {
   ScrollView,
   RefreshControl,
   ActivityIndicator,
+  Platform,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import SwipeDeck from '../components/SwipeDeck'
@@ -24,11 +25,19 @@ import mobileAds, {
 
 const INTERSTITIAL_ID = __DEV__
   ? TestIds.INTERSTITIAL
-  : (process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ID || TestIds.INTERSTITIAL)
+  : (Platform.select({
+      ios: process.env.EXPO_PUBLIC_ADMOB_IOS_INTERSTITIAL_ID,
+      android: process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ID,
+      default: process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_ID,
+    }) || TestIds.INTERSTITIAL)
 
 const BANNER_ID = __DEV__
   ? TestIds.BANNER
-  : (process.env.EXPO_PUBLIC_ADMOB_BANNER_ID || TestIds.BANNER)
+  : (Platform.select({
+      ios: process.env.EXPO_PUBLIC_ADMOB_IOS_BANNER_ID,
+      android: process.env.EXPO_PUBLIC_ADMOB_BANNER_ID,
+      default: process.env.EXPO_PUBLIC_ADMOB_BANNER_ID,
+    }) || TestIds.BANNER)
 
 const interstitial = InterstitialAd.createForAdRequest(INTERSTITIAL_ID)
 
@@ -60,9 +69,44 @@ type Article = {
   type: 'article'
 }
 
+type NativeAdItem = {
+  id: string
+  title: string
+  summary: string
+  category: string
+  type: 'ad'
+}
+
+type FeedItem = Article | NativeAdItem
+
 type Props = {
   onProfilePress: () => void
   onOpenArticle: (article: Article) => void
+}
+
+const NATIVE_AD_INTERVAL = 6
+
+function buildFeedItems(items: any[], category: string, pageNumber: number): FeedItem[] {
+  const categoryKey = category.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+
+  return items.flatMap((item, index) => {
+    const article = { ...item, type: 'article' as const }
+
+    if ((index + 1) % NATIVE_AD_INTERVAL !== 0) {
+      return [article]
+    }
+
+    return [
+      article,
+      {
+        id: `native-ad-${categoryKey}-${pageNumber}-${index}`,
+        title: 'Sponsored',
+        summary: '',
+        category: 'Sponsored',
+        type: 'ad' as const,
+      },
+    ]
+  })
 }
 
 export default function Feed({ onProfilePress, onOpenArticle }: Props) {
@@ -70,7 +114,7 @@ export default function Feed({ onProfilePress, onOpenArticle }: Props) {
   const { loading } = useAuth()
 
   const [activeCategory, setActiveCategory] = useState('For You')
-  const [articles, setArticles] = useState<Article[]>([])
+  const [articles, setArticles] = useState<FeedItem[]>([])
   const [page, setPage] = useState(1)
   const [refreshing, setRefreshing] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -141,7 +185,7 @@ export default function Feed({ onProfilePress, onOpenArticle }: Props) {
       }
 
       const fetched = Array.isArray(response) ? response : []
-      setArticles(fetched.map((a: any) => ({ ...a, type: 'article' as const })))
+      setArticles(buildFeedItems(fetched, activeCategory, 1))
     } catch (e: any) {
       setError(
         e?.message
@@ -169,7 +213,7 @@ export default function Feed({ onProfilePress, onOpenArticle }: Props) {
       }
 
       const fetched = Array.isArray(response) ? response : []
-      setArticles(fetched.map((a: any) => ({ ...a, type: 'article' as const })))
+      setArticles(buildFeedItems(fetched, activeCategory, 1))
       setPage(1)
     } catch {
       setError('Failed to refresh. Try again.')
@@ -192,7 +236,7 @@ export default function Feed({ onProfilePress, onOpenArticle }: Props) {
       if (fetched.length > 0) {
         setArticles((prev) => [
           ...prev,
-          ...fetched.map((a: any) => ({ ...a, type: 'article' as const })),
+          ...buildFeedItems(fetched, activeCategory, nextPage),
         ])
         setPage(nextPage)
       }
@@ -216,19 +260,25 @@ export default function Feed({ onProfilePress, onOpenArticle }: Props) {
     if (dwellStartRef.current !== null && articles[currentIndex - 1]) {
       const prev = articles[currentIndex - 1]
       const dwell = Date.now() - dwellStartRef.current
-      eventLogger.log({ content_id: prev.id, event_type: 'impression', dwell_time_ms: dwell })
+      if (prev.type === 'article') {
+        eventLogger.log({ content_id: prev.id, event_type: 'impression', dwell_time_ms: dwell })
+      }
     }
 
     const current = articles[currentIndex]
     if (current) {
       dwellStartRef.current = Date.now()
-      eventLogger.log({ content_id: current.id, event_type: 'impression', position: currentIndex })
+      if (current.type === 'article') {
+        eventLogger.log({ content_id: current.id, event_type: 'impression', position: currentIndex })
+      }
     }
   }, [currentIndex])
 
-  const handleSwipe = (type: 'swipe_left' | 'swipe_right', article: Article) => {
+  const handleSwipe = (type: 'swipe_left' | 'swipe_right', article: FeedItem) => {
     swipeCountRef.current++
     maybeShowInterstitial()
+
+    if (article.type !== 'article') return
 
     const dwellTime =
       dwellStartRef.current !== null ? Date.now() - dwellStartRef.current : null
@@ -296,9 +346,11 @@ export default function Feed({ onProfilePress, onOpenArticle }: Props) {
                   data={articles}
                   currentIndex={currentIndex}
                   onIndexChange={setCurrentIndex}
-                  onLike={(a) => handleSwipe('swipe_right', a as Article)}
-                  onDislike={(a) => handleSwipe('swipe_left', a as Article)}
-                  onOpenDetail={(a) => onOpenArticle(a as Article)}
+                  onLike={(a) => handleSwipe('swipe_right', a as FeedItem)}
+                  onDislike={(a) => handleSwipe('swipe_left', a as FeedItem)}
+                  onOpenDetail={(a) => {
+                    if (a.type === 'article') onOpenArticle(a as Article)
+                  }}
                 />
               )}
               {loadingMore && <ActivityIndicator style={{ marginTop: 10 }} color={text} />}

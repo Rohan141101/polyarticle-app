@@ -1,4 +1,5 @@
 import {
+  ActivityIndicator,
   View,
   Text,
   Image,
@@ -8,14 +9,32 @@ import {
   PanResponder,
   Dimensions,
   Share,
+  Platform,
 } from 'react-native'
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import * as Haptics from 'expo-haptics'
 import { Ionicons } from '@expo/vector-icons'
+import {
+  NativeAd,
+  NativeAdView,
+  NativeAsset,
+  NativeAssetType,
+  NativeMediaAspectRatio,
+  NativeMediaView,
+  TestIds,
+} from 'react-native-google-mobile-ads'
 import { useSettings } from '../context/SettingsContext'
 import { API_URL } from '../lib/api'
 
 const { width, height } = Dimensions.get('window')
+
+const NATIVE_ID = __DEV__
+  ? TestIds.NATIVE
+  : (Platform.select({
+      ios: process.env.EXPO_PUBLIC_ADMOB_IOS_NATIVE_ID,
+      android: process.env.EXPO_PUBLIC_ADMOB_NATIVE_ID,
+      default: process.env.EXPO_PUBLIC_ADMOB_NATIVE_ID,
+    }) || TestIds.NATIVE)
 
 type SwipeStrength = 'soft' | 'hard'
 
@@ -53,12 +72,49 @@ export default function SwipeCard({
   const { settings } = useSettings()
   const pan = useRef(new Animated.ValueXY()).current
   const threshold = width * 0.35
+  const isAd = item.type === 'ad'
+  const [nativeAd, setNativeAd] = useState<NativeAd | null>(null)
+  const [nativeAdFailed, setNativeAdFailed] = useState(false)
 
   useEffect(() => {
     if (!disabled) {
       pan.setValue({ x: 0, y: 0 })
     }
   }, [item.id, disabled])
+
+  useEffect(() => {
+    if (!isAd || disabled) {
+      setNativeAd(null)
+      return
+    }
+
+    let mounted = true
+    let loadedAd: NativeAd | null = null
+
+    setNativeAd(null)
+    setNativeAdFailed(false)
+
+    NativeAd.createForAdRequest(NATIVE_ID, {
+      aspectRatio: NativeMediaAspectRatio.LANDSCAPE,
+      startVideoMuted: true,
+    })
+      .then((ad) => {
+        loadedAd = ad
+        if (mounted) {
+          setNativeAd(ad)
+        } else {
+          ad.destroy()
+        }
+      })
+      .catch(() => {
+        if (mounted) setNativeAdFailed(true)
+      })
+
+    return () => {
+      mounted = false
+      loadedAd?.destroy()
+    }
+  }, [disabled, isAd, item.id])
 
   const rotate = pan.x.interpolate({
     inputRange: [-width, 0, width],
@@ -162,6 +218,65 @@ export default function SwipeCard({
     return `${Math.floor(diff / 86400)}d ago`
   }
 
+  const renderNativeAd = () => {
+    if (!nativeAd) {
+      return (
+        <View style={styles.adPlaceholder}>
+          {nativeAdFailed ? (
+            <Text style={styles.adPlaceholderText}>Ad unavailable</Text>
+          ) : (
+            <ActivityIndicator color="#111" />
+          )}
+        </View>
+      )
+    }
+
+    return (
+      <NativeAdView nativeAd={nativeAd} style={styles.nativeAd}>
+        <View style={styles.adBadgeRow}>
+          <Text style={styles.adBadge}>Ad</Text>
+          {nativeAd.advertiser ? (
+            <NativeAsset assetType={NativeAssetType.ADVERTISER}>
+              <Text style={styles.adAdvertiser}>{nativeAd.advertiser}</Text>
+            </NativeAsset>
+          ) : null}
+        </View>
+
+        <NativeMediaView resizeMode="cover" style={styles.adMedia} />
+
+        <View style={styles.adTextBlock}>
+          <View style={styles.adHeader}>
+            {nativeAd.icon ? (
+              <NativeAsset assetType={NativeAssetType.ICON}>
+                <Image source={{ uri: nativeAd.icon.url }} style={styles.adIcon} />
+              </NativeAsset>
+            ) : null}
+
+            <NativeAsset assetType={NativeAssetType.HEADLINE}>
+              <Text style={styles.adHeadline} numberOfLines={2}>
+                {nativeAd.headline}
+              </Text>
+            </NativeAsset>
+          </View>
+
+          {nativeAd.body ? (
+            <NativeAsset assetType={NativeAssetType.BODY}>
+              <Text style={styles.adBody} numberOfLines={3}>
+                {nativeAd.body}
+              </Text>
+            </NativeAsset>
+          ) : null}
+
+          {nativeAd.callToAction ? (
+            <NativeAsset assetType={NativeAssetType.CALL_TO_ACTION}>
+              <Text style={styles.adCta}>{nativeAd.callToAction}</Text>
+            </NativeAsset>
+          ) : null}
+        </View>
+      </NativeAdView>
+    )
+  }
+
   return (
     <Animated.View
       style={[
@@ -184,6 +299,20 @@ export default function SwipeCard({
         <Text style={styles.dislikeText}>NOPE</Text>
       </Animated.View>
 
+      {isAd && (
+        <View style={styles.contentWrap}>
+          {disabled ? (
+            <View style={styles.adPlaceholder}>
+              <Text style={styles.adPlaceholderText}>Sponsored</Text>
+            </View>
+          ) : (
+            renderNativeAd()
+          )}
+        </View>
+      )}
+
+      {!isAd && (
+        <>
       <View style={styles.contentWrap}>
         <Image
           source={{ uri: item.image || fallbackImage }}
@@ -226,15 +355,19 @@ export default function SwipeCard({
           <Text style={styles.readMore}>...Read More</Text>
         </TouchableOpacity>
       </View>
+        </>
+      )}
 
       <View style={styles.buttonBar} pointerEvents={disabled ? 'none' : 'auto'}>
         <Circle onPress={() => exit('left')}>
           <Ionicons name="close" size={26} color="#000" />
         </Circle>
 
-        <Circle onPress={() => exit('up')}>
-          <Ionicons name="bookmark-outline" size={24} color="#000" />
-        </Circle>
+        {!isAd && (
+          <Circle onPress={() => exit('up')}>
+            <Ionicons name="bookmark-outline" size={24} color="#000" />
+          </Circle>
+        )}
 
         <Circle onPress={() => exit('right')}>
           <Ionicons name="checkmark" size={32} color="#000" />
@@ -299,5 +432,93 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  nativeAd: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  adPlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f3f4f6',
+  },
+  adPlaceholderText: {
+    color: '#777',
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  adBadgeRow: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    right: 12,
+    zIndex: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  adBadge: {
+    overflow: 'hidden',
+    borderRadius: 6,
+    backgroundColor: '#facc15',
+    color: '#111',
+    fontSize: 11,
+    fontWeight: '800',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    textTransform: 'uppercase',
+  },
+  adAdvertiser: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  adMedia: {
+    width: '100%',
+    height: '55%',
+    backgroundColor: '#e5e7eb',
+  },
+  adTextBlock: {
+    flex: 1,
+    padding: 20,
+  },
+  adHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  adIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+  },
+  adHeadline: {
+    flex: 1,
+    color: '#111',
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  adBody: {
+    color: '#555',
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  adCta: {
+    alignSelf: 'flex-start',
+    marginTop: 18,
+    overflow: 'hidden',
+    borderRadius: 999,
+    backgroundColor: '#111',
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
   },
 })
