@@ -10,7 +10,7 @@ workflows:
       cocoapods: default
       ios_signing:
         distribution_type: ad_hoc
-        bundle_identifier: com.anonymous.flashfeed
+        bundle_identifier: com.rohan.flashfeed2
 
     cache:
       cache_paths:
