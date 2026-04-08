@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "PolyArticle",
@@ -14,9 +15,8 @@
     },
 
     "android": {
-      "usesCleartextTraffic": true,
-      "package": "com.anonymous.flashfeed",
-      "versionCode": 3,
+      "package": "com.rohan.flashfeed2",
+      "versionCode": 5,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
@@ -25,13 +25,10 @@
     },
 
     "ios": {
-      "bundleIdentifier": "com.anonymous.flashfeed",
-      "buildNumber": "3",
+      "bundleIdentifier": "com.rohan.flashfeed2",
+      "buildNumber": "4",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
-        }
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
 
@@ -40,8 +37,8 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-2345974289373242~3123605011",
-          "iosAppId": "ca-app-pub-2345974289373242~2759641888"
+          "android_app_id": "ca-app-pub-2345974289373242~3123605011",
+          "ios_app_id": "ca-app-pub-2345974289373242~2759641888"
         }
       ]
     ],

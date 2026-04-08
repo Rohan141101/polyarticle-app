@@ -45,11 +45,15 @@ function fetchWithTimeout(url: string, options: RequestInit, ms = 60000): Promis
   return fetch(url, {
     ...options,
     signal: controller.signal,
-    headers: {
-      ...(options.headers || {}),
-      Connection: 'keep-alive',
-    },
-  }).finally(() => clearTimeout(timer))
+  })
+    .catch((err: unknown) => {
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new Error('Request timed out. Please try again.')
+      }
+
+      throw err
+    })
+    .finally(() => clearTimeout(timer))
 }
 
 async function handleJson<T>(res: Response): Promise<T> {

@@ -1,0 +1,57 @@
+workflows:
+  ios-release:
+    name: PolyArticle iOS IPA
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    environment:
+      node: v18
+      xcode: 15.4
+      cocoapods: default
+      ios_signing:
+        distribution_type: ad_hoc
+        bundle_identifier: com.anonymous.flashfeed
+
+    cache:
+      cache_paths:
+        - ~/.npm
+        - ios/Pods
+
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+
+      - name: Expo Prebuild
+        script: npx expo prebuild --clean --platform ios --no-install
+
+      - name: Pod Install
+        script: |
+          cd ios && pod install --repo-update
+
+      - name: Inject AdMob ID
+        script: |
+          /usr/libexec/PlistBuddy -c \
+          "Add :GADApplicationIdentifier string ca-app-pub-2345974289373242~2759641888" \
+          ios/PolyArticle/Info.plist 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c \
+          "Set :GADApplicationIdentifier ca-app-pub-2345974289373242~2759641888" \
+          ios/PolyArticle/Info.plist
+
+      - name: Build IPA
+        script: |
+          xcode-project build-ipa \
+            --workspace ios/PolyArticle.xcworkspace \
+            --scheme PolyArticle \
+            --config Release
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      email:
+        recipients:
+          - your@email.com
+        notify:
+          success: true
+          failure: true
