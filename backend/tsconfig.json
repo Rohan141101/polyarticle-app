@@ -8,6 +8,8 @@
     "skipLibCheck": true,
     "types": ["node"],
     "typeRoots": ["./node_modules/@types"],
+    "outDir": "dist",
+    "rootDir": "src"
   },
   "include": ["src"]
 }
