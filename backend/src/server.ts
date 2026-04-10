@@ -12,7 +12,7 @@ const PORT = Number(process.env.PORT) || 4000
 const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 NewsDeck server running on port ${PORT}`)
 
-  startRSSCron()
+ // startRSSCron()
 })
 
 function shutdown() {
