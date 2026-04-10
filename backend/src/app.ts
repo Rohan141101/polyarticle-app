@@ -10,6 +10,8 @@ import profileRoutes from './routes/profile.route'
 import deleteAccountRoutes from './routes/deleteAccount.route'
 import articleRoutes from './routes/article.route'
 
+import { ingestRSSFeeds } from './services/rssIngest.service'
+
 const app = express()
 
 app.set('trust proxy', 1)
@@ -30,7 +32,6 @@ app.use(
 
 app.use(express.json({ limit: '10kb' }))
 
-// Routes
 app.use('/auth', authRoutes)
 app.use('/auth', deleteAccountRoutes)
 app.use('/feed', feedRoutes)
@@ -39,20 +40,27 @@ app.use('/events', eventsRoutes)
 app.use('/profile', profileRoutes)
 app.use('/article', articleRoutes)
 
-// Health check
 app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok' })
 })
 
-// 404 handler
+app.get('/fetch-news', async (_req: Request, res: Response) => {
+  try {
+    await ingestRSSFeeds()
+    res.json({ message: 'News fetched successfully' })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Failed to fetch news' })
+  }
+})
+
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Route not found' })
 })
 
-// Error handler
 app.use(
   (err: Error, _req: Request, res: Response, _next: NextFunction) => {
-    console.error(err) // helpful for debugging
+    console.error(err)
     res.status(500).json({ error: 'Internal server error' })
   }
 )
