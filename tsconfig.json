@@ -1,8 +1,7 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true,
-    "ignoreDeprecations": "true"
+    "strict": true
   },
   "exclude": ["backend"]
 }
