@@ -25,44 +25,67 @@ type FeedConfig = {
 }
 
 const RSS_FEEDS: FeedConfig[] = [
+  // 🌍 GENERAL
   { url: 'https://feeds.bbci.co.uk/news/rss.xml', category: 'General', country: 'UK' },
   { url: 'https://www.theguardian.com/world/rss', category: 'General', country: 'UK' },
   { url: 'https://feeds.reuters.com/reuters/worldNews', category: 'General', country: 'USA' },
   { url: 'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml', category: 'General', country: 'USA' },
-  { url: 'https://news.google.com/rss', category: 'General', country: null },
+  { url: 'https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en', category: 'General', country: null },
   { url: 'https://www.cbc.ca/cmlink/rss-topstories', category: 'General', country: 'Canada' },
   { url: 'https://www.abc.net.au/news/feed/51120/rss.xml', category: 'General', country: 'Australia' },
+  { url: 'https://www.aljazeera.com/xml/rss/all.xml', category: 'General', country: null },
+  { url: 'https://www.npr.org/rss/rss.php?id=1001', category: 'General', country: 'USA' },
 
+  // 🏛️ POLITICS
   { url: 'https://feeds.bbci.co.uk/news/politics/rss.xml', category: 'Politics', country: 'UK' },
   { url: 'https://www.politico.com/rss/politics08.xml', category: 'Politics', country: 'USA' },
   { url: 'https://apnews.com/hub/politics/rss', category: 'Politics', country: 'USA' },
 
+  // 🧠 HEALTH
   { url: 'https://feeds.bbci.co.uk/news/health/rss.xml', category: 'Health', country: 'UK' },
   { url: 'https://www.medicalnewstoday.com/rss', category: 'Health', country: null },
   { url: 'https://www.webmd.com/rss/rss.aspx', category: 'Health', country: null },
   { url: 'https://www.sciencedaily.com/rss/health_medicine.xml', category: 'Health', country: null },
+  { url: 'https://www.healthline.com/rss', category: 'Health', country: null },
 
+  // 💻 TECHNOLOGY
   { url: 'https://techcrunch.com/feed/', category: 'Technology', country: null },
   { url: 'https://www.theverge.com/rss/index.xml', category: 'Technology', country: null },
   { url: 'https://www.engadget.com/rss.xml', category: 'Technology', country: null },
   { url: 'https://arstechnica.com/feed/', category: 'Technology', country: null },
+  { url: 'https://www.wired.com/feed/rss', category: 'Technology', country: null },
+  { url: 'https://thenextweb.com/feed/', category: 'Technology', country: null },
 
+  // 💰 BUSINESS
   { url: 'https://www.cnbc.com/id/100003114/device/rss/rss.html', category: 'Business', country: 'USA' },
   { url: 'https://feeds.marketwatch.com/marketwatch/topstories/', category: 'Business', country: 'USA' },
-  { url: 'https://feeds.a.dj.com/rss/RSSMarketsMain.xml', category: 'Business', country: 'USA' },
 
+  // 📈 STOCKS
+  { url: 'https://feeds.a.dj.com/rss/RSSMarketsMain.xml', category: 'Stocks', country: 'USA' },
+  { url: 'https://www.investing.com/rss/news_25.rss', category: 'Stocks', country: null },
+  { url: 'https://seekingalpha.com/feed.xml', category: 'Stocks', country: 'USA' },
+
+  // 🪙 CRYPTO
   { url: 'https://cointelegraph.com/rss', category: 'Crypto', country: null },
   { url: 'https://decrypt.co/feed', category: 'Crypto', country: null },
+  { url: 'https://bitcoinmagazine.com/.rss/full/', category: 'Crypto', country: null },
 
+  // 🏏 SPORTS
   { url: 'https://www.espn.com/espn/rss/news', category: 'Sports', country: null },
   { url: 'https://feeds.bbci.co.uk/sport/rss.xml', category: 'Sports', country: 'UK' },
   { url: 'https://sports.ndtv.com/rss', category: 'Sports', country: 'India' },
   { url: 'https://www.skysports.com/rss/12040', category: 'Sports', country: 'UK' },
+  { url: 'https://www.goal.com/feeds/en/news', category: 'Sports', country: null },
+  { url: 'https://www.si.com/rss/si_topstories.rss', category: 'Sports', country: null },
+  { url: 'https://sports.yahoo.com/rss/', category: 'Sports', country: null },
 
+  // 🎬 ENTERTAINMENT
   { url: 'https://www.tmz.com/rss.xml', category: 'Entertainment', country: 'USA' },
   { url: 'https://variety.com/feed/', category: 'Entertainment', country: 'USA' },
   { url: 'https://www.hollywoodreporter.com/feed/', category: 'Entertainment', country: 'USA' },
   { url: 'https://www.buzzfeed.com/entertainment.xml', category: 'Entertainment', country: 'USA' },
+  { url: 'https://www.eonline.com/syndication/feeds/rssfeeds/topstories.xml', category: 'Entertainment', country: 'USA' },
+  { url: 'https://www.rollingstone.com/music/music-news/feed/', category: 'Entertainment', country: 'USA' },
 ]
 
 function cleanUrl(url?: string | null): string | null {
@@ -78,9 +101,8 @@ function cleanText(text: string): string {
     .trim()
 }
 
-function isLowQuality(title: string): boolean {
-  const bad = ['click here', 'you won’t believe', 'shocking', 'watch']
-  return bad.some(w => title.toLowerCase().includes(w))
+function normalize(title: string): string {
+  return title.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim()
 }
 
 function extractImageFromItem(item: any): string | null {
@@ -107,18 +129,6 @@ async function extractOGImage(url: string): Promise<string | null> {
   }
 }
 
-async function extractFullContent(url: string): Promise<string> {
-  try {
-    const res = await httpClient.get(url)
-    const html = res.data
-    const match = html.match(/<p>(.*?)<\/p>/gi)
-    if (!match) return ''
-    return cleanText(match.join(' ')).slice(0, 600)
-  } catch {
-    return ''
-  }
-}
-
 type ParsedArticle = {
   title: string
   summary: string
@@ -132,37 +142,29 @@ type ParsedArticle = {
 
 async function processFeed(feedConfig: FeedConfig): Promise<ParsedArticle[]> {
   try {
-    console.log(`➡️ Fetching feed: ${feedConfig.url}`)
+    console.log(`➡️ Fetching: ${feedConfig.url}`)
 
     const res = await httpClient.get(feedConfig.url)
     const feed = await parser.parseString(res.data)
 
-    console.log(`📦 Items fetched: ${feed.items.length}`)
+    console.log(`📦 Raw items: ${feed.items.length}`)
 
     const articles: ParsedArticle[] = []
     let ogCalls = 0
 
-    for (const item of feed.items.slice(0, 50)) {
+    for (const item of feed.items.slice(0, 100)) {
       if (!item.title || !item.link) continue
-      if (item.title.length < 20) continue
-      if (item.title.split(' ').length < 4) continue
-      if (isLowQuality(item.title)) continue
+      if (item.title.length < 10) continue
 
       let image = extractImageFromItem(item)
 
-      if (!image && ogCalls < 80 && Math.random() < 0.6) {
+      if (!image && ogCalls < 150) {
         image = await extractOGImage(item.link)
         ogCalls++
       }
 
       let summary = item.contentSnippet || item.content || ''
-      summary = cleanText(summary)
-
-      if ((!summary || summary.length < 60) && Math.random() < 0.4) {
-        summary = await extractFullContent(item.link)
-      }
-
-      summary = summary.slice(0, 280)
+      summary = cleanText(summary).slice(0, 280)
 
       articles.push({
         title: item.title.trim(),
@@ -170,23 +172,22 @@ async function processFeed(feedConfig: FeedConfig): Promise<ParsedArticle[]> {
         image,
         url: item.link,
         category: feedConfig.category,
-        source: feedConfig.source || feed.title || 'RSS',
-        publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
+        source: feed.title || 'RSS',
+        publishedAt: new Date(),
         country: feedConfig.country,
       })
     }
 
-    console.log(`✅ Articles after filtering: ${articles.length}`)
-
+    console.log(`✅ After filter: ${articles.length}`)
     return articles
   } catch (err) {
-    console.error(`❌ Feed failed: ${feedConfig.url}`, err)
+    console.error(`❌ Failed feed: ${feedConfig.url}`)
     return []
   }
 }
 
 async function batchInsert(articles: ParsedArticle[]) {
-  console.log(`🧾 Attempting DB insert: ${articles.length}`)
+  console.log(`🧾 Attempting insert: ${articles.length}`)
 
   let insertedCount = 0
 
@@ -196,7 +197,7 @@ async function batchInsert(articles: ParsedArticle[]) {
         `
         INSERT INTO articles (title, summary, image_url, url, category, source, published_at, country)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-        ON CONFLICT (title, source) DO NOTHING
+        ON CONFLICT (url) DO NOTHING
         `,
         [
           a.title,
@@ -213,7 +214,7 @@ async function batchInsert(articles: ParsedArticle[]) {
     } catch {}
   }
 
-  console.log(`✅ Inserted into DB: ${insertedCount}`)
+  console.log(`✅ Inserted: ${insertedCount}`)
 
   return { inserted: insertedCount, skipped: articles.length - insertedCount }
 }
@@ -221,18 +222,12 @@ async function batchInsert(articles: ParsedArticle[]) {
 async function backfillMissingImages(articles: ParsedArticle[]): Promise<void> {
   const missing = articles.filter(a => !a.image).slice(0, 100)
 
-  console.log(`🖼 Backfilling images: ${missing.length}`)
-
   await Promise.allSettled(
     missing.map(async (article) => {
       const image = await extractOGImage(article.url)
       if (image) {
         await db.query(
-          `
-          UPDATE articles
-          SET image_url = $1
-          WHERE url = $2 AND image_url IS NULL
-          `,
+          `UPDATE articles SET image_url = $1 WHERE url = $2 AND image_url IS NULL`,
           [image, article.url]
         )
       }
@@ -240,32 +235,14 @@ async function backfillMissingImages(articles: ParsedArticle[]): Promise<void> {
   )
 }
 
-async function deleteOldArticles(): Promise<number> {
-  const res = await db.query(
-    `
-    DELETE FROM articles
-    WHERE published_at < NOW() - INTERVAL '3 days'
-    RETURNING *
-    `
-  )
-  console.log(`🗑 Deleted old articles: ${res.rowCount}`)
-  return res.rowCount || 0
-}
-
 export async function ingestRSSFeeds() {
-  console.log("🚀 RSS ingestion started")
-
-  const startTime = Date.now()
-
-  const deleted = await deleteOldArticles()
+  console.log('🚀 RSS ingestion started')
 
   const allArticles: ParsedArticle[] = []
   const batchSize = 50
 
   for (let i = 0; i < RSS_FEEDS.length; i += batchSize) {
     const batch = RSS_FEEDS.slice(i, i + batchSize)
-
-    console.log(`⚡ Processing batch ${i} → ${i + batch.length}`)
 
     const results = await Promise.allSettled(batch.map(processFeed))
 
@@ -276,36 +253,22 @@ export async function ingestRSSFeeds() {
     }
   }
 
-  console.log(`📊 Total fetched articles: ${allArticles.length}`)
+  console.log(`📊 Total fetched: ${allArticles.length}`)
 
   const seen = new Set<string>()
-  const seenTitles = new Set<string>()
-
   const unique = allArticles.filter(a => {
     if (seen.has(a.url)) return false
-    const key = a.title.toLowerCase().slice(0, 80)
-    if (seenTitles.has(key)) return false
     seen.add(a.url)
-    seenTitles.add(key)
     return true
   })
 
   console.log(`🔍 After dedup: ${unique.length}`)
 
-  const { inserted, skipped } = await batchInsert(unique)
+  const { inserted } = await batchInsert(unique)
 
   await backfillMissingImages(unique.filter(a => !a.image))
 
-  const duration = Math.round((Date.now() - startTime) / 1000)
+  console.log(`🎯 Final inserted: ${inserted}`)
 
-  console.log(`⏱ Completed in ${duration}s`)
-
-  return {
-    success: true,
-    inserted,
-    skipped,
-    deleted,
-    totalFetched: unique.length,
-    durationSeconds: duration,
-  }
+  return { success: true, inserted }
 }
