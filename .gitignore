@@ -19,3 +19,4 @@ ios/
 google-service-account.json
 release-key.jks
 upload_certificate.pem
+~/.gradle/gradle.properties

@@ -25,58 +25,58 @@ type FeedConfig = {
 }
 
 const RSS_FEEDS: FeedConfig[] = [
-  { url: 'https://feeds.bbci.co.uk/news/rss.xml', category: 'General', country: 'UK' },
-  { url: 'https://www.theguardian.com/world/rss', category: 'General', country: 'UK' },
-  { url: 'https://feeds.reuters.com/reuters/worldNews', category: 'General', country: 'USA' },
-  { url: 'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml', category: 'General', country: 'USA' },
-  { url: 'https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en', category: 'General', country: null },
-  { url: 'https://www.cbc.ca/cmlink/rss-topstories', category: 'General', country: 'Canada' },
-  { url: 'https://www.abc.net.au/news/feed/51120/rss.xml', category: 'General', country: 'Australia' },
-  { url: 'https://www.aljazeera.com/xml/rss/all.xml', category: 'General', country: null },
-  { url: 'https://www.npr.org/rss/rss.php?id=1001', category: 'General', country: 'USA' },
+  { url: 'https://feeds.bbci.co.uk/news/rss.xml', category: 'General', country: 'UK', source: 'BBC' },
+  { url: 'https://www.theguardian.com/world/rss', category: 'General', country: 'UK', source: 'The Guardian' },
+  { url: 'https://feeds.reuters.com/reuters/worldNews', category: 'General', country: 'USA', source: 'Reuters' },
+  { url: 'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml', category: 'General', country: 'USA', source: 'New York Times' },
+  { url: 'https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en', category: 'General', country: null, source: 'Google News' },
+  { url: 'https://www.cbc.ca/cmlink/rss-topstories', category: 'General', country: 'Canada', source: 'CBC' },
+  { url: 'https://www.abc.net.au/news/feed/51120/rss.xml', category: 'General', country: 'Australia', source: 'ABC Australia' },
+  { url: 'https://www.aljazeera.com/xml/rss/all.xml', category: 'General', country: null, source: 'Al Jazeera' },
+  { url: 'https://www.npr.org/rss/rss.php?id=1001', category: 'General', country: 'USA', source: 'NPR' },
 
-  { url: 'https://feeds.bbci.co.uk/news/politics/rss.xml', category: 'Politics', country: 'UK' },
-  { url: 'https://www.politico.com/rss/politics08.xml', category: 'Politics', country: 'USA' },
-  { url: 'https://apnews.com/hub/politics/rss', category: 'Politics', country: 'USA' },
+  { url: 'https://feeds.bbci.co.uk/news/politics/rss.xml', category: 'Politics', country: 'UK', source: 'BBC' },
+  { url: 'https://www.politico.com/rss/politics08.xml', category: 'Politics', country: 'USA', source: 'Politico' },
+  { url: 'https://apnews.com/hub/politics/rss', category: 'Politics', country: 'USA', source: 'Associated Press' },
 
-  { url: 'https://feeds.bbci.co.uk/news/health/rss.xml', category: 'Health', country: 'UK' },
-  { url: 'https://www.medicalnewstoday.com/rss', category: 'Health', country: null },
-  { url: 'https://www.webmd.com/rss/rss.aspx', category: 'Health', country: null },
-  { url: 'https://www.sciencedaily.com/rss/health_medicine.xml', category: 'Health', country: null },
-  { url: 'https://www.healthline.com/rss', category: 'Health', country: null },
+  { url: 'https://feeds.bbci.co.uk/news/health/rss.xml', category: 'Health', country: 'UK', source: 'BBC' },
+  { url: 'https://www.medicalnewstoday.com/rss', category: 'Health', country: null, source: 'Medical News Today' },
+  { url: 'https://www.webmd.com/rss/rss.aspx', category: 'Health', country: null, source: 'WebMD' },
+  { url: 'https://www.sciencedaily.com/rss/health_medicine.xml', category: 'Health', country: null, source: 'ScienceDaily' },
+  { url: 'https://www.healthline.com/rss', category: 'Health', country: null, source: 'Healthline' },
 
-  { url: 'https://techcrunch.com/feed/', category: 'Technology', country: null },
-  { url: 'https://www.theverge.com/rss/index.xml', category: 'Technology', country: null },
-  { url: 'https://www.engadget.com/rss.xml', category: 'Technology', country: null },
-  { url: 'https://arstechnica.com/feed/', category: 'Technology', country: null },
-  { url: 'https://www.wired.com/feed/rss', category: 'Technology', country: null },
-  { url: 'https://thenextweb.com/feed/', category: 'Technology', country: null },
+  { url: 'https://techcrunch.com/feed/', category: 'Technology', country: null, source: 'TechCrunch' },
+  { url: 'https://www.theverge.com/rss/index.xml', category: 'Technology', country: null, source: 'The Verge' },
+  { url: 'https://www.engadget.com/rss.xml', category: 'Technology', country: null, source: 'Engadget' },
+  { url: 'https://arstechnica.com/feed/', category: 'Technology', country: null, source: 'Ars Technica' },
+  { url: 'https://www.wired.com/feed/rss', category: 'Technology', country: null, source: 'Wired' },
+  { url: 'https://thenextweb.com/feed/', category: 'Technology', country: null, source: 'The Next Web' },
 
-  { url: 'https://www.cnbc.com/id/100003114/device/rss/rss.html', category: 'Business', country: 'USA' },
-  { url: 'https://feeds.marketwatch.com/marketwatch/topstories/', category: 'Business', country: 'USA' },
+  { url: 'https://www.cnbc.com/id/100003114/device/rss/rss.html', category: 'Business', country: 'USA', source: 'CNBC' },
+  { url: 'https://feeds.marketwatch.com/marketwatch/topstories/', category: 'Business', country: 'USA', source: 'MarketWatch' },
 
-  { url: 'https://feeds.a.dj.com/rss/RSSMarketsMain.xml', category: 'Stocks', country: 'USA' },
-  { url: 'https://www.investing.com/rss/news_25.rss', category: 'Stocks', country: null },
-  { url: 'https://seekingalpha.com/feed.xml', category: 'Stocks', country: 'USA' },
+  { url: 'https://feeds.a.dj.com/rss/RSSMarketsMain.xml', category: 'Stocks', country: 'USA', source: 'Wall Street Journal' },
+  { url: 'https://www.investing.com/rss/news_25.rss', category: 'Stocks', country: null, source: 'Investing.com' },
+  { url: 'https://seekingalpha.com/feed.xml', category: 'Stocks', country: 'USA', source: 'Seeking Alpha' },
 
-  { url: 'https://cointelegraph.com/rss', category: 'Crypto', country: null },
-  { url: 'https://decrypt.co/feed', category: 'Crypto', country: null },
-  { url: 'https://bitcoinmagazine.com/.rss/full/', category: 'Crypto', country: null },
+  { url: 'https://cointelegraph.com/rss', category: 'Crypto', country: null, source: 'Cointelegraph' },
+  { url: 'https://decrypt.co/feed', category: 'Crypto', country: null, source: 'Decrypt' },
+  { url: 'https://bitcoinmagazine.com/.rss/full/', category: 'Crypto', country: null, source: 'Bitcoin Magazine' },
 
-  { url: 'https://www.espn.com/espn/rss/news', category: 'Sports', country: null },
-  { url: 'https://feeds.bbci.co.uk/sport/rss.xml', category: 'Sports', country: 'UK' },
-  { url: 'https://sports.ndtv.com/rss', category: 'Sports', country: 'India' },
-  { url: 'https://www.skysports.com/rss/12040', category: 'Sports', country: 'UK' },
-  { url: 'https://www.goal.com/feeds/en/news', category: 'Sports', country: null },
-  { url: 'https://www.si.com/rss/si_topstories.rss', category: 'Sports', country: null },
-  { url: 'https://sports.yahoo.com/rss/', category: 'Sports', country: null },
+  { url: 'https://www.espn.com/espn/rss/news', category: 'Sports', country: null, source: 'ESPN' },
+  { url: 'https://feeds.bbci.co.uk/sport/rss.xml', category: 'Sports', country: 'UK', source: 'BBC Sport' },
+  { url: 'https://sports.ndtv.com/rss', category: 'Sports', country: 'India', source: 'NDTV Sports' },
+  { url: 'https://www.skysports.com/rss/12040', category: 'Sports', country: 'UK', source: 'Sky Sports' },
+  { url: 'https://www.goal.com/feeds/en/news', category: 'Sports', country: null, source: 'Goal' },
+  { url: 'https://www.si.com/rss/si_topstories.rss', category: 'Sports', country: null, source: 'Sports Illustrated' },
+  { url: 'https://sports.yahoo.com/rss/', category: 'Sports', country: null, source: 'Yahoo Sports' },
 
-  { url: 'https://www.tmz.com/rss.xml', category: 'Entertainment', country: 'USA' },
-  { url: 'https://variety.com/feed/', category: 'Entertainment', country: 'USA' },
-  { url: 'https://www.hollywoodreporter.com/feed/', category: 'Entertainment', country: 'USA' },
-  { url: 'https://www.buzzfeed.com/entertainment.xml', category: 'Entertainment', country: 'USA' },
-  { url: 'https://www.eonline.com/syndication/feeds/rssfeeds/topstories.xml', category: 'Entertainment', country: 'USA' },
-  { url: 'https://www.rollingstone.com/music/music-news/feed/', category: 'Entertainment', country: 'USA' },
+  { url: 'https://www.tmz.com/rss.xml', category: 'Entertainment', country: 'USA', source: 'TMZ' },
+  { url: 'https://variety.com/feed/', category: 'Entertainment', country: 'USA', source: 'Variety' },
+  { url: 'https://www.hollywoodreporter.com/feed/', category: 'Entertainment', country: 'USA', source: 'Hollywood Reporter' },
+  { url: 'https://www.buzzfeed.com/entertainment.xml', category: 'Entertainment', country: 'USA', source: 'BuzzFeed' },
+  { url: 'https://www.eonline.com/syndication/feeds/rssfeeds/topstories.xml', category: 'Entertainment', country: 'USA', source: 'E! Online' },
+  { url: 'https://www.rollingstone.com/music/music-news/feed/', category: 'Entertainment', country: 'USA', source: 'Rolling Stone' },
 ]
 
 function normalizeUrl(url: string): string {
@@ -133,12 +133,8 @@ type ParsedArticle = {
 
 async function processFeed(feedConfig: FeedConfig): Promise<ParsedArticle[]> {
   try {
-    console.log(`➡️ Fetching: ${feedConfig.url}`)
-
     const res = await httpClient.get(feedConfig.url)
     const feed = await parser.parseString(res.data)
-
-    console.log(`📦 Raw items: ${feed.items.length}`)
 
     const articles: ParsedArticle[] = []
     let ogCalls = 0
@@ -166,24 +162,20 @@ async function processFeed(feedConfig: FeedConfig): Promise<ParsedArticle[]> {
         image,
         url: normalizeUrl(item.link),
         category: feedConfig.category,
-        source: feed.title || 'RSS',
+        source: feedConfig.source!,
         publishedAt: published,
         country: feedConfig.country,
       })
     }
 
-    console.log(`✅ After filter: ${articles.length}`)
     return articles
   } catch {
-    console.error(`❌ Failed feed: ${feedConfig.url}`)
     return []
   }
 }
 
 async function batchInsert(articles: ParsedArticle[]) {
   let insertedCount = 0
-  let duplicateCount = 0
-  let errorCount = 0
 
   for (const a of articles) {
     try {
@@ -205,36 +197,16 @@ async function batchInsert(articles: ParsedArticle[]) {
         ]
       )
 
-      if (res.rowCount === 0) {
-        duplicateCount++
-        console.log('⚠️ Duplicate skipped:', a.url)
-      } else {
+      if (res.rowCount !== 0) {
         insertedCount++
       }
-    } catch (err: any) {
-      errorCount++
-      console.error('❌ DB ERROR:', {
-        message: err.message,
-        detail: err.detail,
-        constraint: err.constraint,
-        url: a.url,
-      })
-    }
+    } catch {}
   }
-
-  console.log('📊 DB Summary:', {
-    inserted: insertedCount,
-    duplicates: duplicateCount,
-    errors: errorCount,
-    totalAttempted: articles.length,
-  })
 
   return { inserted: insertedCount }
 }
 
 export async function ingestRSSFeeds() {
-  console.log('🚀 RSS ingestion started')
-
   const batchSize = 10
   let totalInserted = 0
 
@@ -251,8 +223,6 @@ export async function ingestRSSFeeds() {
       }
     }
 
-    console.log(`📊 Batch fetched: ${batchArticles.length}`)
-
     const seen = new Set<string>()
     const unique = batchArticles.filter(a => {
       if (seen.has(a.url)) return false
@@ -262,10 +232,10 @@ export async function ingestRSSFeeds() {
 
     const { inserted } = await batchInsert(unique)
 
+    console.log('Batch inserted: ${inserted}')
+
     totalInserted += inserted
   }
-
-  console.log(`🎯 Total inserted: ${totalInserted}`)
 
   return {
     success: true,
