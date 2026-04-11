@@ -44,14 +44,17 @@ app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok' })
 })
 
-app.get('/fetch-news', async (_req: Request, res: Response) => {
-  try {
-    await ingestRSSFeeds()
-    res.json({ message: 'News fetched successfully' })
-  } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: 'Failed to fetch news' })
-  }
+app.get('/ping', (_req: Request, res: Response) => {
+  res.send('ok')
+})
+
+app.get('/fetch-news', (_req: Request, res: Response) => {
+  // respond immediately
+  res.json({ message: 'News fetch started' })
+
+  ingestRSSFeeds().catch((error) => {
+    console.error('Background fetch error:', error)
+  })
 })
 
 app.use((_req: Request, res: Response) => {
