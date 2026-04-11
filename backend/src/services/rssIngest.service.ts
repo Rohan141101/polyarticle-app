@@ -79,6 +79,10 @@ const RSS_FEEDS: FeedConfig[] = [
   { url: 'https://www.rollingstone.com/music/music-news/feed/', category: 'Entertainment', country: 'USA' },
 ]
 
+function normalizeUrl(url: string): string {
+  return url.split('?')[0]
+}
+
 function cleanUrl(url?: string | null): string | null {
   if (!url) return null
   return url.replace(/&amp;/g, '&')
@@ -143,6 +147,9 @@ async function processFeed(feedConfig: FeedConfig): Promise<ParsedArticle[]> {
       if (!item.title || !item.link) continue
       if (item.title.length < 10) continue
 
+      const published = item.pubDate ? new Date(item.pubDate) : new Date()
+      if (Date.now() - published.getTime() > 6 * 60 * 60 * 1000) continue
+
       let image = extractImageFromItem(item)
 
       if (!image && ogCalls < 150) {
@@ -157,10 +164,10 @@ async function processFeed(feedConfig: FeedConfig): Promise<ParsedArticle[]> {
         title: item.title.trim(),
         summary,
         image,
-        url: item.link,
+        url: normalizeUrl(item.link),
         category: feedConfig.category,
         source: feed.title || 'RSS',
-        publishedAt: new Date(),
+        publishedAt: published,
         country: feedConfig.country,
       })
     }
