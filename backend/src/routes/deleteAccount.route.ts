@@ -15,6 +15,7 @@ router.delete(
 
       await client.query('BEGIN')
 
+      await client.query('DELETE FROM user_events WHERE user_id = $1', [userId])
       await client.query('DELETE FROM user_seen WHERE user_id = $1', [userId])
       await client.query('DELETE FROM sessions WHERE user_id = $1', [userId])
       await client.query('DELETE FROM user_profiles WHERE user_id = $1', [userId])

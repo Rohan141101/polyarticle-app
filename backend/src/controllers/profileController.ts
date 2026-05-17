@@ -20,11 +20,14 @@ export async function savePreferences(req: AuthenticatedRequest, res: Response) 
     const seededVector = seedUserVector(categories)
 
     await pool.query(
-      `INSERT INTO user_profiles (user_id, user_vector, created_at, updated_at)
-       VALUES ($1, $2, NOW(), NOW())
+      `INSERT INTO user_profiles (user_id, interests, user_vector, created_at, updated_at)
+       VALUES ($1, $2, $3, NOW(), NOW())
        ON CONFLICT (user_id)
-       DO UPDATE SET user_vector = EXCLUDED.user_vector, updated_at = NOW()`,
-      [req.user.id, `[${seededVector.join(',')}]`]
+       DO UPDATE SET
+         interests = EXCLUDED.interests,
+         user_vector = EXCLUDED.user_vector,
+         updated_at = NOW()`,
+      [req.user.id, categories, `[${seededVector.join(',')}]`]
     )
 
     return res.json({ success: true })

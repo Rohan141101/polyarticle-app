@@ -30,6 +30,7 @@ router.delete('/delete-account', auth_middleware_1.requireAuth, (async (req, res
     }
     try {
         await db_1.db.query('BEGIN');
+        await db_1.db.query('DELETE FROM user_events WHERE user_id = $1', [userId]);
         await db_1.db.query('DELETE FROM user_seen WHERE user_id = $1', [userId]);
         await db_1.db.query('DELETE FROM user_profiles WHERE user_id = $1', [userId]);
         await db_1.db.query('DELETE FROM sessions WHERE user_id = $1', [userId]);

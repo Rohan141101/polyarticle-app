@@ -44,6 +44,7 @@ router.delete(
     try {
       await pool.query('BEGIN')
 
+      await pool.query('DELETE FROM user_events WHERE user_id = $1', [userId])
       await pool.query('DELETE FROM user_seen WHERE user_id = $1', [userId])
       await pool.query('DELETE FROM user_profiles WHERE user_id = $1', [userId])
       await pool.query('DELETE FROM sessions WHERE user_id = $1', [userId])

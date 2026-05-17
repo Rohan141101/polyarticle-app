@@ -25,59 +25,68 @@ type FeedConfig = {
 }
 
 const RSS_FEEDS: FeedConfig[] = [
+  // General
   { url: 'https://feeds.bbci.co.uk/news/rss.xml', category: 'General', country: 'UK', source: 'BBC' },
-  { url: 'https://www.theguardian.com/world/rss', category: 'General', country: 'UK', source: 'The Guardian' },
-  { url: 'https://feeds.reuters.com/reuters/worldNews', category: 'General', country: 'USA', source: 'Reuters' },
-  { url: 'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml', category: 'General', country: 'USA', source: 'New York Times' },
-  { url: 'https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en', category: 'General', country: null, source: 'Google News' },
   { url: 'https://www.cbc.ca/cmlink/rss-topstories', category: 'General', country: 'Canada', source: 'CBC' },
   { url: 'https://www.abc.net.au/news/feed/51120/rss.xml', category: 'General', country: 'Australia', source: 'ABC Australia' },
-  { url: 'https://www.aljazeera.com/xml/rss/all.xml', category: 'General', country: null, source: 'Al Jazeera' },
-  { url: 'https://www.npr.org/rss/rss.php?id=1001', category: 'General', country: 'USA', source: 'NPR' },
+  { url: 'https://apnews.com/hub/ap-top-news/rss', category: 'General', country: 'USA', source: 'Associated Press' },
+  { url: 'https://feeds.skynews.com/feeds/rss/home.xml', category: 'General', country: 'UK', source: 'Sky News' },
 
+  // World
+  { url: 'https://feeds.bbci.co.uk/news/world/rss.xml', category: 'World', country: null, source: 'BBC' },
+  { url: 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml', category: 'World', country: null, source: 'New York Times' },
+  { url: 'https://apnews.com/hub/world-news/rss', category: 'World', country: null, source: 'Associated Press' },
+  { url: 'https://www.aljazeera.com/xml/rss/all.xml', category: 'World', country: null, source: 'Al Jazeera' },
+  { url: 'https://feeds.reuters.com/reuters/worldNews', category: 'World', country: null, source: 'Reuters' },
+
+  // Politics
   { url: 'https://feeds.bbci.co.uk/news/politics/rss.xml', category: 'Politics', country: 'UK', source: 'BBC' },
   { url: 'https://www.politico.com/rss/politics08.xml', category: 'Politics', country: 'USA', source: 'Politico' },
   { url: 'https://apnews.com/hub/politics/rss', category: 'Politics', country: 'USA', source: 'Associated Press' },
+  { url: 'https://thehill.com/rss/syndicator/19110', category: 'Politics', country: 'USA', source: 'The Hill' },
 
+  // Health
   { url: 'https://feeds.bbci.co.uk/news/health/rss.xml', category: 'Health', country: 'UK', source: 'BBC' },
   { url: 'https://www.medicalnewstoday.com/rss', category: 'Health', country: null, source: 'Medical News Today' },
-  { url: 'https://www.webmd.com/rss/rss.aspx', category: 'Health', country: null, source: 'WebMD' },
-  { url: 'https://www.sciencedaily.com/rss/health_medicine.xml', category: 'Health', country: null, source: 'ScienceDaily' },
-  { url: 'https://www.healthline.com/rss', category: 'Health', country: null, source: 'Healthline' },
+  { url: 'https://www.who.int/rss-feeds/news-english.xml', category: 'Health', country: null, source: 'WHO' },
+  { url: 'https://www.webmd.com/rss/rss.aspx?rss=topstories', category: 'Health', country: null, source: 'WebMD' },
 
+  // Technology
   { url: 'https://techcrunch.com/feed/', category: 'Technology', country: null, source: 'TechCrunch' },
   { url: 'https://www.theverge.com/rss/index.xml', category: 'Technology', country: null, source: 'The Verge' },
   { url: 'https://www.engadget.com/rss.xml', category: 'Technology', country: null, source: 'Engadget' },
   { url: 'https://arstechnica.com/feed/', category: 'Technology', country: null, source: 'Ars Technica' },
-  { url: 'https://www.wired.com/feed/rss', category: 'Technology', country: null, source: 'Wired' },
-  { url: 'https://thenextweb.com/feed/', category: 'Technology', country: null, source: 'The Next Web' },
+  { url: 'https://feeds.wired.com/wired/index', category: 'Technology', country: null, source: 'Wired' },
 
+  // Business
   { url: 'https://www.cnbc.com/id/100003114/device/rss/rss.html', category: 'Business', country: 'USA', source: 'CNBC' },
   { url: 'https://feeds.marketwatch.com/marketwatch/topstories/', category: 'Business', country: 'USA', source: 'MarketWatch' },
+  { url: 'https://www.ft.com/rss/home', category: 'Business', country: 'UK', source: 'Financial Times' },
+  { url: 'https://feeds.bloomberg.com/markets/news.rss', category: 'Business', country: 'USA', source: 'Bloomberg' },
 
-  { url: 'https://feeds.a.dj.com/rss/RSSMarketsMain.xml', category: 'Stocks', country: 'USA', source: 'Wall Street Journal' },
-  { url: 'https://www.investing.com/rss/news_25.rss', category: 'Stocks', country: null, source: 'Investing.com' },
+  // Stocks
+  { url: 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=^GSPC&region=US&lang=en-US', category: 'Stocks', country: 'USA', source: 'Yahoo Finance' },
+  { url: 'https://www.cnbc.com/id/100000187/device/rss/rss.html', category: 'Stocks', country: 'USA', source: 'CNBC Markets' },
+  { url: 'https://feeds.marketwatch.com/marketwatch/marketpulse/', category: 'Stocks', country: 'USA', source: 'MarketWatch Market Pulse' },
   { url: 'https://seekingalpha.com/feed.xml', category: 'Stocks', country: 'USA', source: 'Seeking Alpha' },
 
+  // Crypto
   { url: 'https://cointelegraph.com/rss', category: 'Crypto', country: null, source: 'Cointelegraph' },
   { url: 'https://decrypt.co/feed', category: 'Crypto', country: null, source: 'Decrypt' },
-  { url: 'https://bitcoinmagazine.com/.rss/full/', category: 'Crypto', country: null, source: 'Bitcoin Magazine' },
+  { url: 'https://coindesk.com/arc/outboundfeeds/rss/', category: 'Crypto', country: null, source: 'CoinDesk' },
 
-  { url: 'https://www.espn.com/espn/rss/news', category: 'Sports', country: null, source: 'ESPN' },
+  // Sports
   { url: 'https://feeds.bbci.co.uk/sport/rss.xml', category: 'Sports', country: 'UK', source: 'BBC Sport' },
-  { url: 'https://sports.ndtv.com/rss', category: 'Sports', country: 'India', source: 'NDTV Sports' },
-  { url: 'https://www.skysports.com/rss/12040', category: 'Sports', country: 'UK', source: 'Sky Sports' },
-  { url: 'https://www.goal.com/feeds/en/news', category: 'Sports', country: null, source: 'Goal' },
-  { url: 'https://www.si.com/rss/si_topstories.rss', category: 'Sports', country: null, source: 'Sports Illustrated' },
-  { url: 'https://sports.yahoo.com/rss/', category: 'Sports', country: null, source: 'Yahoo Sports' },
+  { url: 'https://www.espn.com/espn/rss/news', category: 'Sports', country: 'USA', source: 'ESPN' },
+  { url: 'https://api.foxsports.com/v1/rss', category: 'Sports', country: 'USA', source: 'Fox Sports' },
 
-  { url: 'https://www.tmz.com/rss.xml', category: 'Entertainment', country: 'USA', source: 'TMZ' },
-  { url: 'https://variety.com/feed/', category: 'Entertainment', country: 'USA', source: 'Variety' },
-  { url: 'https://www.hollywoodreporter.com/feed/', category: 'Entertainment', country: 'USA', source: 'Hollywood Reporter' },
-  { url: 'https://www.buzzfeed.com/entertainment.xml', category: 'Entertainment', country: 'USA', source: 'BuzzFeed' },
-  { url: 'https://www.eonline.com/syndication/feeds/rssfeeds/topstories.xml', category: 'Entertainment', country: 'USA', source: 'E! Online' },
-  { url: 'https://www.rollingstone.com/music/music-news/feed/', category: 'Entertainment', country: 'USA', source: 'Rolling Stone' },
+  // Entertainment
+  { url: 'https://variety.com/feed/', category: 'Entertainment', country: null, source: 'Variety' },
+  { url: 'https://deadline.com/feed/', category: 'Entertainment', country: null, source: 'Deadline' },
+  { url: 'https://www.hollywoodreporter.com/feed/', category: 'Entertainment', country: null, source: 'Hollywood Reporter' },
 ]
+
+const MAX_ARTICLE_AGE_MS = 3 * 24 * 60 * 60 * 1000
 
 function normalizeUrl(url: string): string {
   return url.split('?')[0]
@@ -94,6 +103,11 @@ function cleanText(text: string): string {
     .replace(/\s+/g, ' ')
     .replace(/&nbsp;/g, ' ')
     .trim()
+}
+
+function isLowQuality(title: string): boolean {
+  const bad = ["click here", "you won't believe", 'shocking', 'watch']
+  return bad.some(word => title.toLowerCase().includes(word))
 }
 
 function extractImageFromItem(item: any): string | null {
@@ -120,6 +134,18 @@ async function extractOGImage(url: string): Promise<string | null> {
   }
 }
 
+async function extractFullContent(url: string): Promise<string> {
+  try {
+    const res = await httpClient.get(url)
+    const html = res.data
+    const match = html.match(/<p>(.*?)<\/p>/gi)
+    if (!match) return ''
+    return cleanText(match.join(' ')).slice(0, 600)
+  } catch {
+    return ''
+  }
+}
+
 type ParsedArticle = {
   title: string
   summary: string
@@ -141,20 +167,33 @@ async function processFeed(feedConfig: FeedConfig): Promise<ParsedArticle[]> {
 
     for (const item of feed.items.slice(0, 100)) {
       if (!item.title || !item.link) continue
-      if (item.title.length < 10) continue
+      if (item.title.length < 30) continue
+      if (item.title.split(' ').length < 5) continue
+      if (isLowQuality(item.title)) continue
 
-      const published = item.pubDate ? new Date(item.pubDate) : new Date()
-      if (Date.now() - published.getTime() > 6 * 60 * 60 * 1000) continue
+      const description = (item as { description?: string }).description
+
+      let publishedAt = item.pubDate ? new Date(item.pubDate) : new Date()
+      if (Number.isNaN(publishedAt.getTime())) {
+        publishedAt = new Date()
+      }
+      if (Date.now() - publishedAt.getTime() > MAX_ARTICLE_AGE_MS) continue
 
       let image = extractImageFromItem(item)
 
-      if (!image && ogCalls < 150) {
+      if (!image && ogCalls < 40 && Math.random() < 0.4) {
         image = await extractOGImage(item.link)
         ogCalls++
       }
 
-      let summary = item.contentSnippet || item.content || ''
-      summary = cleanText(summary).slice(0, 280)
+      let summary = item.contentSnippet || item.content || description || ''
+      summary = cleanText(summary)
+
+      if ((!summary || summary.length < 60) && Math.random() < 0.3) {
+        summary = await extractFullContent(item.link)
+      }
+
+      summary = summary.slice(0, 280)
 
       articles.push({
         title: item.title.trim(),
@@ -162,8 +201,8 @@ async function processFeed(feedConfig: FeedConfig): Promise<ParsedArticle[]> {
         image,
         url: normalizeUrl(item.link),
         category: feedConfig.category,
-        source: feedConfig.source!,
-        publishedAt: published,
+        source: feedConfig.source || feed.title || 'RSS',
+        publishedAt,
         country: feedConfig.country,
       })
     }
@@ -175,9 +214,10 @@ async function processFeed(feedConfig: FeedConfig): Promise<ParsedArticle[]> {
 }
 
 async function batchInsert(articles: ParsedArticle[]) {
-  let insertedCount = 0
+  let inserted = 0
+  let skipped = 0
 
-  for (const a of articles) {
+  for (const article of articles) {
     try {
       const res = await db.query(
         `
@@ -186,59 +226,104 @@ async function batchInsert(articles: ParsedArticle[]) {
         ON CONFLICT (url) DO NOTHING
         `,
         [
-          a.title,
-          a.summary,
-          a.image,
-          a.url,
-          a.category,
-          a.source,
-          a.publishedAt.toISOString(),
-          a.country,
+          article.title,
+          article.summary,
+          article.image,
+          article.url,
+          article.category,
+          article.source,
+          article.publishedAt.toISOString(),
+          article.country,
         ]
       )
 
-      if (res.rowCount !== 0) {
-        insertedCount++
+      if (res.rowCount && res.rowCount > 0) {
+        inserted++
+      } else {
+        skipped++
       }
-    } catch {}
+    } catch {
+      skipped++
+    }
   }
 
-  return { inserted: insertedCount }
+  return { inserted, skipped }
+}
+
+async function backfillMissingImages(articles: ParsedArticle[]): Promise<void> {
+  const missing = articles.slice(0, 60)
+
+  await Promise.allSettled(
+    missing.map(async article => {
+      const image = await extractOGImage(article.url)
+      if (image) {
+        await db.query(
+          `
+          UPDATE articles
+          SET image_url = $1
+          WHERE url = $2 AND image_url IS NULL
+          `,
+          [image, article.url]
+        )
+      }
+    })
+  )
+}
+
+async function deleteOldArticles(): Promise<number> {
+  const res = await db.query(
+    `
+    DELETE FROM articles
+    WHERE published_at < NOW() - INTERVAL '3 days'
+    `
+  )
+  return res.rowCount || 0
 }
 
 export async function ingestRSSFeeds() {
-  const batchSize = 10
-  let totalInserted = 0
+  const startTime = Date.now()
+  const deleted = await deleteOldArticles()
+
+  const allArticles: ParsedArticle[] = []
+  const batchSize = 20
 
   for (let i = 0; i < RSS_FEEDS.length; i += batchSize) {
     const batch = RSS_FEEDS.slice(i, i + batchSize)
-
     const results = await Promise.allSettled(batch.map(processFeed))
-
-    let batchArticles: ParsedArticle[] = []
 
     for (const result of results) {
       if (result.status === 'fulfilled') {
-        batchArticles.push(...result.value)
+        allArticles.push(...result.value)
       }
     }
-
-    const seen = new Set<string>()
-    const unique = batchArticles.filter(a => {
-      if (seen.has(a.url)) return false
-      seen.add(a.url)
-      return true
-    })
-
-    const { inserted } = await batchInsert(unique)
-
-    console.log('Batch inserted: ${inserted}')
-
-    totalInserted += inserted
   }
+
+  const seenUrls = new Set<string>()
+  const seenTitles = new Set<string>()
+
+  const unique = allArticles.filter(article => {
+    if (seenUrls.has(article.url)) return false
+
+    const titleKey = article.title.toLowerCase().slice(0, 80)
+    if (seenTitles.has(titleKey)) return false
+
+    seenUrls.add(article.url)
+    seenTitles.add(titleKey)
+    return true
+  })
+
+  const { inserted, skipped } = await batchInsert(unique)
+
+  await backfillMissingImages(unique.filter(article => !article.image))
+
+  const durationSeconds = Math.round((Date.now() - startTime) / 1000)
 
   return {
     success: true,
-    inserted: totalInserted,
+    inserted,
+    skipped,
+    deleted,
+    totalFetched: unique.length,
+    durationSeconds,
   }
 }

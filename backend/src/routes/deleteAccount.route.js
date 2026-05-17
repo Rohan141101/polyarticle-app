@@ -9,6 +9,7 @@ router.delete('/delete-account', auth_middleware_1.requireAuth, async (req, res)
     try {
         const userId = req.user.id;
         await client.query('BEGIN');
+        await client.query('DELETE FROM user_events WHERE user_id = $1', [userId]);
         await client.query('DELETE FROM user_seen WHERE user_id = $1', [userId]);
         await client.query('DELETE FROM sessions WHERE user_id = $1', [userId]);
         await client.query('DELETE FROM user_profiles WHERE user_id = $1', [userId]);
