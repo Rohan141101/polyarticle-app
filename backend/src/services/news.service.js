@@ -1,7 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getNews = getNews;
+exports.getNewsForGuest = getNewsForGuest;
 exports.getRegionalNews = getRegionalNews;
+exports.getRegionalNewsForGuest = getRegionalNewsForGuest;
 const db_1 = require("../lib/db");
 const READY_ARTICLE_WHERE = `
   published_at IS NOT NULL
@@ -39,6 +41,16 @@ const REGION_MAP = {
     Luxembourg: ['Luxembourg', 'LU'],
     EU: ['EU'],
 };
+const EMPTY_INTERACTION_SIGNALS = {
+    categoryScores: {},
+    sourceScores: {},
+    totalEvents: 0,
+};
+function getAllowedRegions(location) {
+    return location
+        ? (REGION_MAP[location] ?? [location])
+        : ['USA', 'UK', 'Canada', 'Australia', 'EU'];
+}
 function recencyScore(publishedAt) {
     const published = new Date(publishedAt).getTime();
     if (Number.isNaN(published))
@@ -164,6 +176,18 @@ async function markArticlesSeen(userId, articles) {
      VALUES ${values}
      ON CONFLICT DO NOTHING`, [userId, ...ids]);
 }
+async function getCategoryNews(category, page, limit) {
+    const categoryOffset = (page - 1) * limit;
+    const result = await db_1.db.query(`
+    SELECT id, title, summary, image_url, url, source, published_at, category
+    FROM articles
+    WHERE category = $1
+      AND ${READY_ARTICLE_WHERE}
+    ORDER BY published_at DESC
+    LIMIT $2 OFFSET $3
+    `, [category, limit, categoryOffset]);
+    return result.rows;
+}
 async function getUserProfile(userId) {
     const result = await db_1.db.query(`SELECT interests FROM user_profiles WHERE user_id = $1`, [userId]);
     return {
@@ -173,6 +197,20 @@ async function getUserProfile(userId) {
 async function getUserLocation(userId) {
     const result = await db_1.db.query(`SELECT location FROM app_users WHERE id = $1 LIMIT 1`, [userId]);
     return result.rows[0]?.location ?? null;
+}
+async function getGuestProfile(guestId) {
+    const result = await db_1.db.query(`
+    SELECT interests, region
+    FROM guest_sessions
+    WHERE id = $1
+      AND expires_at > NOW()
+    LIMIT 1
+    `, [guestId]);
+    const profile = result.rows[0];
+    return {
+        interests: Array.isArray(profile?.interests) ? profile.interests : [],
+        region: profile?.region ?? null,
+    };
 }
 async function getInteractionSignals(userId) {
     const result = await db_1.db.query(`
@@ -333,17 +371,8 @@ function finalizeFeed(scored, limit, recentSeenCounts, trendingScores) {
     return filled.slice(0, limit);
 }
 async function getNews(userId, page = 1, limit = 10, category, fresh = false) {
-    const categoryOffset = category && category !== 'For You' ? (page - 1) * limit : 0;
     if (category && category !== 'For You') {
-        const result = await db_1.db.query(`
-      SELECT id, title, summary, image_url, url, source, published_at, category
-      FROM articles
-      WHERE category = $1
-        AND ${READY_ARTICLE_WHERE}
-      ORDER BY published_at DESC
-      LIMIT $2 OFFSET $3
-      `, [category, limit, categoryOffset]);
-        return result.rows;
+        return getCategoryNews(category, page, limit);
     }
     if (fresh) {
         const result = await db_1.db.query(`
@@ -403,11 +432,50 @@ async function getNews(userId, page = 1, limit = 10, category, fresh = false) {
     await markArticlesSeen(userId, finalFeed);
     return finalFeed;
 }
+async function getNewsForGuest(guestId, page = 1, limit = 10, category, _fresh = false) {
+    if (category && category !== 'For You') {
+        return getCategoryNews(category, page, limit);
+    }
+    const profile = await getGuestProfile(guestId);
+    const interests = new Set(profile.interests || []);
+    const poolSize = candidatePoolSize(limit);
+    const candidatesResult = await db_1.db.query(`
+    SELECT id, title, summary, image_url, url, source, published_at, category, country
+    FROM articles
+    WHERE ${READY_ARTICLE_WHERE}
+    ORDER BY published_at DESC
+    LIMIT $1
+    `, [poolSize]);
+    const candidates = candidatesResult.rows;
+    if (!candidates.length) {
+        return [];
+    }
+    const trendingScores = await getTrendingScores(candidates.map(article => article.id));
+    const recentSeenCounts = {};
+    const scored = candidates
+        .map(article => ({
+        ...article,
+        score: computeAdaptiveScore(article, interests, EMPTY_INTERACTION_SIGNALS, recentSeenCounts, trendingScores),
+    }))
+        .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    return finalizeFeed(scored, limit, recentSeenCounts, trendingScores);
+}
 async function getRegionalNews(userId, limit = 10) {
     const userLocation = await getUserLocation(userId);
-    const allowedRegions = userLocation
-        ? (REGION_MAP[userLocation] ?? [userLocation])
-        : ['USA', 'UK', 'Canada', 'Australia', 'EU'];
+    const allowedRegions = getAllowedRegions(userLocation);
+    const result = await db_1.db.query(`
+    SELECT id, title, summary, image_url, url, source, published_at, category, country
+    FROM articles
+    WHERE country = ANY($1)
+      AND ${READY_ARTICLE_WHERE}
+    ORDER BY published_at DESC
+    LIMIT $2
+    `, [allowedRegions, limit * 2]);
+    return applyDiversity(result.rows, limit);
+}
+async function getRegionalNewsForGuest(guestId, limit = 10) {
+    const profile = await getGuestProfile(guestId);
+    const allowedRegions = getAllowedRegions(profile.region);
     const result = await db_1.db.query(`
     SELECT id, title, summary, image_url, url, source, published_at, category, country
     FROM articles

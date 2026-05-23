@@ -22,6 +22,9 @@ async function runIngestion() {
 
     logger.log('✅ RSS ingestion completed', {
       inserted: result?.inserted,
+      skipped: result?.skipped,
+      deleted: result?.deleted,
+      totalFetched: result?.totalFetched,
       durationSeconds: duration,
     })
   } catch (err) {

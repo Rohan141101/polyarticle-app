@@ -9,6 +9,14 @@ type SignupBody = {
   deviceOS?: string
   location?: string
   interests?: string[]
+  guestToken?: string
+}
+
+type GuestBody = {
+  interests?: string[]
+  region?: string
+  deviceOS?: string
+  platform?: string
 }
 
 function safeError(err: unknown): string {
@@ -16,9 +24,51 @@ function safeError(err: unknown): string {
   return 'An unexpected error occurred'
 }
 
+function headerValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value
+}
+
+function isIosGuestRequest(req: Request, body: GuestBody): boolean {
+  const signals = [
+    body.deviceOS,
+    body.platform,
+    headerValue(req.headers['x-platform']),
+    headerValue(req.headers['x-device-os']),
+    headerValue(req.headers['x-client-platform']),
+    headerValue(req.headers['user-agent']),
+  ]
+
+  return signals.some(signal =>
+    typeof signal === 'string' &&
+    /\b(ios|iphone|ipad)\b/i.test(signal)
+  )
+}
+
+export async function guest(req: Request, res: Response) {
+  try {
+    const body = req.body as GuestBody
+
+    if (!isIosGuestRequest(req, body)) {
+      return res.status(403).json({ error: 'Guest access is only available on iOS' })
+    }
+
+    const data = await AuthService.createGuestSession(body.interests, body.region)
+    return res.json(data)
+  } catch (err: any) {
+    return res.status(500).json({
+      error:
+        err?.message ||
+        err?.details ||
+        err?.hint ||
+        JSON.stringify(err) ||
+        'Guest session failed'
+    })
+  }
+}
+
 export async function signup(req: Request, res: Response) {
   try {
-    const { email, password, deviceName, deviceOS, location, interests } = req.body as SignupBody
+    const { email, password, deviceName, deviceOS, location, interests, guestToken } = req.body as SignupBody
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password required' })
     }
@@ -34,6 +84,7 @@ export async function signup(req: Request, res: Response) {
       ipAddress: req.ip,
       location,
       interests,
+      guestToken,
     })
     res.json(data)
   } catch (err: any) {

@@ -15,6 +15,7 @@ import { useRef, useEffect, useState } from 'react'
 import * as Haptics from 'expo-haptics'
 import { Ionicons } from '@expo/vector-icons'
 import {
+  adsAvailable,
   NativeAd,
   NativeAdView,
   NativeAsset,
@@ -22,9 +23,10 @@ import {
   NativeMediaAspectRatio,
   NativeMediaView,
   TestIds,
-} from 'react-native-google-mobile-ads'
+} from '../lib/googleMobileAds'
 import { useSettings } from '../context/SettingsContext'
 import { API_URL } from '../lib/api'
+import { eventLogger } from '../utils/eventLogger'
 
 const { width, height } = Dimensions.get('window')
 
@@ -73,7 +75,7 @@ export default function SwipeCard({
   const pan = useRef(new Animated.ValueXY()).current
   const threshold = width * 0.35
   const isAd = item.type === 'ad'
-  const [nativeAd, setNativeAd] = useState<NativeAd | null>(null)
+  const [nativeAd, setNativeAd] = useState<any | null>(null)
   const [nativeAdFailed, setNativeAdFailed] = useState(false)
 
   useEffect(() => {
@@ -83,13 +85,16 @@ export default function SwipeCard({
   }, [item.id, disabled])
 
   useEffect(() => {
-    if (!isAd || disabled) {
+    if (!isAd || disabled || !adsAvailable || !NativeAd || !NativeMediaAspectRatio) {
       setNativeAd(null)
+      if (isAd && !disabled && !adsAvailable) {
+        setNativeAdFailed(true)
+      }
       return
     }
 
     let mounted = true
-    let loadedAd: NativeAd | null = null
+    let loadedAd: any | null = null
 
     setNativeAd(null)
     setNativeAdFailed(false)
@@ -177,6 +182,7 @@ export default function SwipeCard({
         message: `${item.title}\n\n${shareUrl}`,
         url: shareUrl,
       })
+      eventLogger.log({ content_id: item.id, event_type: 'share' })
     } catch {}
   }
 
@@ -219,6 +225,14 @@ export default function SwipeCard({
   }
 
   const renderNativeAd = () => {
+    if (!NativeAdView || !NativeAsset || !NativeAssetType || !NativeMediaView) {
+      return (
+        <View style={styles.adPlaceholder}>
+          <Text style={styles.adPlaceholderText}>Sponsored</Text>
+        </View>
+      )
+    }
+
     if (!nativeAd) {
       return (
         <View style={styles.adPlaceholder}>

@@ -15,13 +15,15 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { fetchNews, fetchRegionalNews } from '../lib/api'
 import { eventLogger } from '../utils/eventLogger'
 import { useAuth } from '../context/AuthContext'
-import mobileAds, {
+import {
+  AdEventType,
+  adsAvailable,
   BannerAd,
   BannerAdSize,
   InterstitialAd,
-  AdEventType,
+  mobileAds,
   TestIds,
-} from 'react-native-google-mobile-ads'
+} from '../lib/googleMobileAds'
 
 const INTERSTITIAL_ID = __DEV__
   ? TestIds.INTERSTITIAL
@@ -38,8 +40,6 @@ const BANNER_ID = __DEV__
       android: process.env.EXPO_PUBLIC_ADMOB_BANNER_ID,
       default: process.env.EXPO_PUBLIC_ADMOB_BANNER_ID,
     }) || TestIds.BANNER)
-
-const interstitial = InterstitialAd.createForAdRequest(INTERSTITIAL_ID)
 
 const CATEGORIES = [
   'For You',
@@ -121,6 +121,8 @@ export default function Feed({ onProfilePress, onOpenArticle }: Props) {
   const [initialLoading, setInitialLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [adsEnabled, setAdsEnabled] = useState(adsAvailable)
+  const interstitialRef = useRef<any>(null)
 
   const swipeCountRef = useRef(0)
   const lastAdTimeRef = useRef(0)
@@ -138,7 +140,21 @@ export default function Feed({ onProfilePress, onOpenArticle }: Props) {
   const pillInactiveText = isDark ? '#aaa' : '#555'
 
   useEffect(() => {
-    mobileAds().initialize()
+    if (!adsAvailable || !mobileAds || !InterstitialAd || !AdEventType) {
+      setAdsEnabled(false)
+      interstitialRef.current = null
+      return
+    }
+
+    const interstitial = InterstitialAd.createForAdRequest(INTERSTITIAL_ID)
+    interstitialRef.current = interstitial
+
+    mobileAds()
+      .initialize()
+      .catch(() => {
+        setAdsEnabled(false)
+        interstitialRef.current = null
+      })
 
     const unsubscribeLoaded = interstitial.addAdEventListener(AdEventType.LOADED, () => {
       interstitialLoaded.current = true
@@ -152,6 +168,7 @@ export default function Feed({ onProfilePress, onOpenArticle }: Props) {
     interstitial.load()
 
     return () => {
+      interstitialRef.current = null
       unsubscribeLoaded()
       unsubscribeClosed()
     }
@@ -163,12 +180,16 @@ export default function Feed({ onProfilePress, onOpenArticle }: Props) {
       swipeCountRef.current > 10 &&
       swipeCountRef.current % 6 === 0 &&
       now - lastAdTimeRef.current > 90000 &&
-      interstitialLoaded.current
+      interstitialLoaded.current &&
+      interstitialRef.current
     ) {
-      interstitial.show()
+      interstitialRef.current.show()
       lastAdTimeRef.current = now
     }
   }
+
+  const getCurrentDwellTime = () =>
+    dwellStartRef.current !== null ? Date.now() - dwellStartRef.current : null
 
   const loadInitial = useCallback(async () => {
     try {
@@ -280,9 +301,30 @@ export default function Feed({ onProfilePress, onOpenArticle }: Props) {
 
     if (article.type !== 'article') return
 
-    const dwellTime =
-      dwellStartRef.current !== null ? Date.now() - dwellStartRef.current : null
+    const dwellTime = getCurrentDwellTime()
     eventLogger.log({ content_id: article.id, event_type: type, dwell_time_ms: dwellTime })
+  }
+
+  const handleSave = (article: FeedItem) => {
+    if (article.type !== 'article') return
+
+    eventLogger.log({
+      content_id: article.id,
+      event_type: 'save',
+      dwell_time_ms: getCurrentDwellTime(),
+    })
+  }
+
+  const handleOpenDetail = (article: FeedItem) => {
+    if (article.type !== 'article') return
+
+    eventLogger.log({
+      content_id: article.id,
+      event_type: 'open_detail',
+      dwell_time_ms: getCurrentDwellTime(),
+    })
+
+    onOpenArticle(article as Article)
   }
 
   if (initialLoading) {
@@ -348,9 +390,8 @@ export default function Feed({ onProfilePress, onOpenArticle }: Props) {
                   onIndexChange={setCurrentIndex}
                   onLike={(a) => handleSwipe('swipe_right', a as FeedItem)}
                   onDislike={(a) => handleSwipe('swipe_left', a as FeedItem)}
-                  onOpenDetail={(a) => {
-                    if (a.type === 'article') onOpenArticle(a as Article)
-                  }}
+                  onSave={(a) => handleSave(a as FeedItem)}
+                  onOpenDetail={(a) => handleOpenDetail(a as FeedItem)}
                 />
               )}
               {loadingMore && <ActivityIndicator style={{ marginTop: 10 }} color={text} />}
@@ -359,9 +400,11 @@ export default function Feed({ onProfilePress, onOpenArticle }: Props) {
         </ScrollView>
 
         {/* Sticky banner ad at bottom */}
-        <View style={[styles.stickyBanner, { backgroundColor: isDark ? '#111' : '#fff' }]}>
-          <BannerAd unitId={BANNER_ID} size={BannerAdSize.BANNER} />
-        </View>
+        {adsEnabled && BannerAd && BannerAdSize ? (
+          <View style={[styles.stickyBanner, { backgroundColor: isDark ? '#111' : '#fff' }]}>
+            <BannerAd unitId={BANNER_ID} size={BannerAdSize.BANNER} />
+          </View>
+        ) : null}
       </View>
     </SafeAreaView>
   )

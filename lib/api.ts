@@ -1,4 +1,5 @@
 import { getSession } from './session'
+import { Platform } from 'react-native'
 
 export const API_URL = "https://polyarticle-app.onrender.com"
 
@@ -9,6 +10,14 @@ type AuthPayload = {
   interests?: string[]
   deviceName?: string
   deviceOS?: string
+  guestToken?: string
+}
+
+type GuestPayload = {
+  interests?: string[]
+  region?: string
+  deviceOS?: string
+  platform?: string
 }
 
 export type Article = {
@@ -88,10 +97,33 @@ export async function signup(payload: AuthPayload) {
       interests: payload.interests,
       deviceName: payload.deviceName,
       deviceOS: payload.deviceOS,
+      guestToken: payload.guestToken,
     }),
   }, 30000)
 
   return handleJson(res)
+}
+
+export async function createGuestSession(payload: GuestPayload) {
+  const platform = payload.platform ?? Platform.OS
+  const deviceOS = payload.deviceOS ?? (platform === 'ios' ? 'iOS' : platform)
+
+  const res = await fetchWithTimeout(`${API_URL}/auth/guest`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Platform': platform,
+      'X-Device-OS': deviceOS,
+    },
+    body: JSON.stringify({
+      interests: payload.interests,
+      region: payload.region,
+      deviceOS,
+      platform,
+    }),
+  }, 30000)
+
+  return handleJson<{ sessionToken: string }>(res)
 }
 
 export async function login(payload: AuthPayload) {

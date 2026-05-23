@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useSettings } from '../context/SettingsContext'
 import { API_URL } from '../lib/api'
+import { eventLogger } from '../utils/eventLogger'
 
 type Article = {
   id: string
@@ -60,6 +61,7 @@ export default function ArticleScreen({ article, onBack }: Props) {
         message: `${article.title}\n\n${shareUrl}`,
         url: shareUrl, // iOS uses this for rich preview
       })
+      eventLogger.log({ content_id: article.id, event_type: 'share' })
     } catch {}
   }
 

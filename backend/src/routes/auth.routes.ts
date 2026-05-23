@@ -1,5 +1,6 @@
 import { Router, RequestHandler, Response } from 'express'
 import {
+  guest,
   signup,
   login,
   logout,
@@ -22,6 +23,7 @@ const authLimiter = rateLimit({
 
 const router = Router()
 
+router.post('/guest', authLimiter, guest)
 router.post('/signup', authLimiter, signup)
 router.post('/login', authLimiter, login)
 

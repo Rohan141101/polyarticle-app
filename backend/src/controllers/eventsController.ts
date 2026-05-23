@@ -1,6 +1,6 @@
 import { Response } from 'express'
 import { db as pool } from '../lib/db'
-import { AuthenticatedRequest } from '../middleware/auth.middleware'
+import { AuthOrGuestRequest } from '../middleware/auth.middleware'
 import { logger } from '../utils/logger'
 
 const isDev = process.env.NODE_ENV !== 'production'
@@ -31,12 +31,17 @@ type FeedEvent = {
   metadata?: Record<string, unknown>
 }
 
-export async function logEvent(req: AuthenticatedRequest, res: Response) {
+export async function logEvent(req: AuthOrGuestRequest, res: Response) {
   try {
-    const userId = req.user.id
+    const userId = req.user?.id ?? null
+    const guestId = req.guest?.id ?? null
     const { events, session_id } = req.body as {
       events?: FeedEvent[]
       session_id?: string
+    }
+
+    if (!userId && !guestId) {
+      return res.status(401).json({ error: 'Unauthorized' })
     }
 
     if (!events || !Array.isArray(events) || events.length === 0) {
@@ -57,10 +62,11 @@ export async function logEvent(req: AuthenticatedRequest, res: Response) {
 
     const values: unknown[] = []
     const placeholders = validEvents.map((event, index) => {
-      const base = index * 7
+      const base = index * 8
 
       values.push(
         userId,
+        guestId,
         event.content_id,
         event.event_type,
         session_id ?? null,
@@ -69,13 +75,14 @@ export async function logEvent(req: AuthenticatedRequest, res: Response) {
         event.dwell_time_ms ?? null
       )
 
-      return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, NOW(), $${base + 7})`
+      return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, NOW(), $${base + 8})`
     })
 
     await pool.query(
       `
       INSERT INTO user_events (
         user_id,
+        guest_id,
         content_id,
         event_type,
         session_id,
@@ -89,7 +96,7 @@ export async function logEvent(req: AuthenticatedRequest, res: Response) {
       values
     )
 
-    log(`Inserted ${validEvents.length} events for user ${userId}`)
+    log(`Inserted ${validEvents.length} events for ${userId ? `user ${userId}` : `guest ${guestId}`}`)
 
     return res.json({ success: true })
   } catch (err) {

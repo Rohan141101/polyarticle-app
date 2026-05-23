@@ -22,7 +22,13 @@ app.use((0, helmet_1.default)({
 app.use((0, cors_1.default)({
     origin: '*',
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Platform',
+        'X-Device-OS',
+        'X-Client-Platform',
+    ],
 }));
 app.use(express_1.default.json({ limit: '10kb' }));
 app.use('/auth', auth_routes_1.default);
@@ -35,15 +41,15 @@ app.use('/article', article_route_1.default);
 app.get('/health', (_req, res) => {
     res.json({ status: 'ok' });
 });
-app.get('/fetch-news', async (_req, res) => {
-    try {
-        await (0, rssIngest_service_1.ingestRSSFeeds)();
-        res.json({ message: 'News fetched successfully' });
-    }
-    catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to fetch news' });
-    }
+app.get('/ping', (_req, res) => {
+    res.send('ok');
+});
+app.get('/fetch-news', (_req, res) => {
+    // respond immediately
+    res.json({ message: 'News fetch started' });
+    (0, rssIngest_service_1.ingestRSSFeeds)().catch((error) => {
+        console.error('Background fetch error:', error);
+    });
 });
 app.use((_req, res) => {
     res.status(404).json({ error: 'Route not found' });

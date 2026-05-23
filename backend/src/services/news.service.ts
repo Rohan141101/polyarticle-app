@@ -17,6 +17,11 @@ type UserProfile = {
   interests: string[]
 }
 
+type GuestProfile = {
+  interests: string[]
+  region: string | null
+}
+
 type InteractionSignals = {
   categoryScores: Record<string, number>
   sourceScores: Record<string, number>
@@ -68,6 +73,18 @@ const REGION_MAP: Record<string, string[]> = {
   Spain: ['Spain', 'ES'],
   Luxembourg: ['Luxembourg', 'LU'],
   EU: ['EU'],
+}
+
+const EMPTY_INTERACTION_SIGNALS: InteractionSignals = {
+  categoryScores: {},
+  sourceScores: {},
+  totalEvents: 0,
+}
+
+function getAllowedRegions(location?: string | null): string[] {
+  return location
+    ? (REGION_MAP[location] ?? [location])
+    : ['USA', 'UK', 'Canada', 'Australia', 'EU']
 }
 
 function recencyScore(publishedAt: string): number {
@@ -213,6 +230,28 @@ async function markArticlesSeen(userId: string, articles: Article[]): Promise<vo
   )
 }
 
+async function getCategoryNews(
+  category: string,
+  page: number,
+  limit: number
+): Promise<Article[]> {
+  const categoryOffset = (page - 1) * limit
+
+  const result = await pool.query<Article>(
+    `
+    SELECT id, title, summary, image_url, url, source, published_at, category
+    FROM articles
+    WHERE category = $1
+      AND ${READY_ARTICLE_WHERE}
+    ORDER BY published_at DESC
+    LIMIT $2 OFFSET $3
+    `,
+    [category, limit, categoryOffset]
+  )
+
+  return result.rows
+}
+
 async function getUserProfile(userId: string): Promise<UserProfile> {
   const result = await pool.query(
     `SELECT interests FROM user_profiles WHERE user_id = $1`,
@@ -231,6 +270,26 @@ async function getUserLocation(userId: string): Promise<string | null> {
   )
 
   return result.rows[0]?.location ?? null
+}
+
+async function getGuestProfile(guestId: string): Promise<GuestProfile> {
+  const result = await pool.query<GuestProfile>(
+    `
+    SELECT interests, region
+    FROM guest_sessions
+    WHERE id = $1
+      AND expires_at > NOW()
+    LIMIT 1
+    `,
+    [guestId]
+  )
+
+  const profile = result.rows[0]
+
+  return {
+    interests: Array.isArray(profile?.interests) ? profile.interests : [],
+    region: profile?.region ?? null,
+  }
 }
 
 async function getInteractionSignals(userId: string): Promise<InteractionSignals> {
@@ -456,22 +515,8 @@ export async function getNews(
   category?: string,
   fresh: boolean = false
 ): Promise<Article[]> {
-  const categoryOffset = category && category !== 'For You' ? (page - 1) * limit : 0
-
   if (category && category !== 'For You') {
-    const result = await pool.query<Article>(
-      `
-      SELECT id, title, summary, image_url, url, source, published_at, category
-      FROM articles
-      WHERE category = $1
-        AND ${READY_ARTICLE_WHERE}
-      ORDER BY published_at DESC
-      LIMIT $2 OFFSET $3
-      `,
-      [category, limit, categoryOffset]
-    )
-
-    return result.rows
+    return getCategoryNews(category, page, limit)
   }
 
   if (fresh) {
@@ -562,14 +607,85 @@ export async function getNews(
   return finalFeed
 }
 
+export async function getNewsForGuest(
+  guestId: string,
+  page: number = 1,
+  limit: number = 10,
+  category?: string,
+  _fresh: boolean = false
+): Promise<Article[]> {
+  if (category && category !== 'For You') {
+    return getCategoryNews(category, page, limit)
+  }
+
+  const profile = await getGuestProfile(guestId)
+  const interests = new Set(profile.interests || [])
+  const poolSize = candidatePoolSize(limit)
+
+  const candidatesResult = await pool.query<Article>(
+    `
+    SELECT id, title, summary, image_url, url, source, published_at, category, country
+    FROM articles
+    WHERE ${READY_ARTICLE_WHERE}
+    ORDER BY published_at DESC
+    LIMIT $1
+    `,
+    [poolSize]
+  )
+
+  const candidates = candidatesResult.rows
+
+  if (!candidates.length) {
+    return []
+  }
+
+  const trendingScores = await getTrendingScores(candidates.map(article => article.id))
+  const recentSeenCounts: Record<string, number> = {}
+
+  const scored = candidates
+    .map(article => ({
+      ...article,
+      score: computeAdaptiveScore(
+        article,
+        interests,
+        EMPTY_INTERACTION_SIGNALS,
+        recentSeenCounts,
+        trendingScores
+      ),
+    }))
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+
+  return finalizeFeed(scored, limit, recentSeenCounts, trendingScores)
+}
+
 export async function getRegionalNews(
   userId: string,
   limit: number = 10
 ): Promise<Article[]> {
   const userLocation = await getUserLocation(userId)
-  const allowedRegions = userLocation
-    ? (REGION_MAP[userLocation] ?? [userLocation])
-    : ['USA', 'UK', 'Canada', 'Australia', 'EU']
+  const allowedRegions = getAllowedRegions(userLocation)
+
+  const result = await pool.query<Article>(
+    `
+    SELECT id, title, summary, image_url, url, source, published_at, category, country
+    FROM articles
+    WHERE country = ANY($1)
+      AND ${READY_ARTICLE_WHERE}
+    ORDER BY published_at DESC
+    LIMIT $2
+    `,
+    [allowedRegions, limit * 2]
+  )
+
+  return applyDiversity(result.rows, limit)
+}
+
+export async function getRegionalNewsForGuest(
+  guestId: string,
+  limit: number = 10
+): Promise<Article[]> {
+  const profile = await getGuestProfile(guestId)
+  const allowedRegions = getAllowedRegions(profile.region)
 
   const result = await pool.query<Article>(
     `

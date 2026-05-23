@@ -9,6 +9,7 @@ const category_service_1 = require("../services/category.service");
 const db_1 = require("../lib/db");
 const router = (0, express_1.Router)();
 const auth = auth_middleware_1.requireAuth;
+const authOrGuest = auth_middleware_1.requireAuthOrGuest;
 function requireAdmin(req, res, next) {
     const adminSecret = req.headers['x-admin-secret'];
     if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
@@ -69,12 +70,16 @@ router.get('/admin/backfill-categories', auth, requireAdmin, async (_req, res) =
         });
     }
 });
-router.get('/regional', auth, async (req, res) => {
+router.get('/regional', authOrGuest, async (req, res) => {
     try {
-        const { user } = req;
-        let news = await (0, news_service_1.getRegionalNews)(user.id, 10);
+        const { user, guest } = req;
+        let news = user
+            ? await (0, news_service_1.getRegionalNews)(user.id, 10)
+            : await (0, news_service_1.getRegionalNewsForGuest)(guest.id, 10);
         if (!news.length) {
-            news = await (0, news_service_1.getNews)(user.id, 1, 10, 'World');
+            news = user
+                ? await (0, news_service_1.getNews)(user.id, 1, 10, 'World')
+                : await (0, news_service_1.getNewsForGuest)(guest.id, 1, 10, 'World');
         }
         return res.json({ success: true, count: news.length, data: news });
     }
@@ -87,14 +92,16 @@ router.get('/regional', auth, async (req, res) => {
         });
     }
 });
-router.get('/', auth, async (req, res) => {
+router.get('/', authOrGuest, async (req, res) => {
     try {
-        const { user } = req;
+        const { user, guest } = req;
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const limit = Math.min(Math.max(1, parseInt(req.query.limit) || 10), 20);
         const category = req.query.category;
         const fresh = req.query.fresh === 'true';
-        const news = await (0, news_service_1.getNews)(user.id, page, limit, category, fresh);
+        const news = user
+            ? await (0, news_service_1.getNews)(user.id, page, limit, category, fresh)
+            : await (0, news_service_1.getNewsForGuest)(guest.id, page, limit, category, fresh);
         return res.json({
             success: true,
             page,

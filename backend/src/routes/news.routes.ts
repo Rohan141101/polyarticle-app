@@ -1,14 +1,15 @@
 import { Router, Request, Response, RequestHandler, NextFunction } from 'express'
-import { getNews, getRegionalNews } from '../services/news.service'
+import { getNews, getNewsForGuest, getRegionalNews, getRegionalNewsForGuest } from '../services/news.service'
 import { ingestRSSFeeds } from '../services/rssIngest.service'
 import { repairMissingImages } from '../services/imageRepair.service'
-import { requireAuth, AuthenticatedRequest } from '../middleware/auth.middleware'
+import { requireAuth, requireAuthOrGuest, AuthOrGuestRequest } from '../middleware/auth.middleware'
 import { inferCategory } from '../services/category.service'
 import { db as pool } from '../lib/db'
 
 const router = Router()
 
 const auth = requireAuth as unknown as RequestHandler
+const authOrGuest = requireAuthOrGuest as unknown as RequestHandler
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const adminSecret = req.headers['x-admin-secret']
@@ -82,14 +83,18 @@ router.get('/admin/backfill-categories', auth, requireAdmin, async (_req: Reques
   }
 })
 
-router.get('/regional', auth, async (req: Request, res: Response) => {
+router.get('/regional', authOrGuest, async (req: Request, res: Response) => {
   try {
-    const { user } = req as AuthenticatedRequest
+    const { user, guest } = req as AuthOrGuestRequest
 
-    let news = await getRegionalNews(user.id, 10)
+    let news = user
+      ? await getRegionalNews(user.id, 10)
+      : await getRegionalNewsForGuest(guest!.id, 10)
 
     if (!news.length) {
-      news = await getNews(user.id, 1, 10, 'World')
+      news = user
+        ? await getNews(user.id, 1, 10, 'World')
+        : await getNewsForGuest(guest!.id, 1, 10, 'World')
     }
 
     return res.json({ success: true, count: news.length, data: news })
@@ -104,16 +109,18 @@ router.get('/regional', auth, async (req: Request, res: Response) => {
   }
 })
 
-router.get('/', auth, async (req: Request, res: Response) => {
+router.get('/', authOrGuest, async (req: Request, res: Response) => {
   try {
-    const { user } = req as AuthenticatedRequest
+    const { user, guest } = req as AuthOrGuestRequest
 
     const page = Math.max(1, parseInt(req.query.page as string) || 1)
     const limit = Math.min(Math.max(1, parseInt(req.query.limit as string) || 10), 20)
     const category = req.query.category as string | undefined
     const fresh = req.query.fresh === 'true'
 
-    const news = await getNews(user.id, page, limit, category, fresh)
+    const news = user
+      ? await getNews(user.id, page, limit, category, fresh)
+      : await getNewsForGuest(guest!.id, page, limit, category, fresh)
 
     return res.json({
       success: true,

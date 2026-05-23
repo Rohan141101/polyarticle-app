@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.guest = guest;
 exports.signup = signup;
 exports.login = login;
 exports.me = me;
@@ -46,9 +47,43 @@ function safeError(err) {
         return err.message;
     return 'An unexpected error occurred';
 }
+function headerValue(value) {
+    return Array.isArray(value) ? value[0] : value;
+}
+function isIosGuestRequest(req, body) {
+    const signals = [
+        body.deviceOS,
+        body.platform,
+        headerValue(req.headers['x-platform']),
+        headerValue(req.headers['x-device-os']),
+        headerValue(req.headers['x-client-platform']),
+        headerValue(req.headers['user-agent']),
+    ];
+    return signals.some(signal => typeof signal === 'string' &&
+        /\b(ios|iphone|ipad)\b/i.test(signal));
+}
+async function guest(req, res) {
+    try {
+        const body = req.body;
+        if (!isIosGuestRequest(req, body)) {
+            return res.status(403).json({ error: 'Guest access is only available on iOS' });
+        }
+        const data = await AuthService.createGuestSession(body.interests, body.region);
+        return res.json(data);
+    }
+    catch (err) {
+        return res.status(500).json({
+            error: err?.message ||
+                err?.details ||
+                err?.hint ||
+                JSON.stringify(err) ||
+                'Guest session failed'
+        });
+    }
+}
 async function signup(req, res) {
     try {
-        const { email, password, deviceName, deviceOS, location, interests } = req.body;
+        const { email, password, deviceName, deviceOS, location, interests, guestToken } = req.body;
         if (!email || !password) {
             return res.status(400).json({ error: 'Email and password required' });
         }
@@ -64,6 +99,7 @@ async function signup(req, res) {
             ipAddress: req.ip,
             location,
             interests,
+            guestToken,
         });
         res.json(data);
     }

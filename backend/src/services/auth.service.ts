@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import { db as pool } from '../lib/db'
 import { hashPassword, verifyPassword } from '../utils/hash'
 import { generateSessionToken } from '../utils/token'
@@ -8,6 +9,7 @@ type DeviceInfo = {
   ipAddress?: string
   location?: string
   interests?: string[]
+  guestToken?: string
 }
 
 type UserRecord = {
@@ -20,7 +22,95 @@ type UserRecord = {
   password_hash: string
 }
 
+type GuestSessionRecord = {
+  id: string
+  interests: string[]
+  region: string | null
+  expires_at: Date | string
+}
+
 const SESSION_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000
+
+function normalizeStringArray(value?: string[]): string[] {
+  if (!Array.isArray(value)) return []
+
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map(item => item.trim())
+    .filter(Boolean)
+}
+
+function normalizeRegion(value?: string): string | null {
+  if (typeof value !== 'string') return null
+
+  const region = value.trim()
+  return region || null
+}
+
+async function getLockedValidGuestByToken(
+  client: { query: typeof pool.query },
+  token?: string | null
+): Promise<GuestSessionRecord | null> {
+  if (!token || typeof token !== 'string') return null
+
+  const cleanToken = token.trim()
+  if (!cleanToken) return null
+
+  const result = await client.query<GuestSessionRecord>(
+    `
+    SELECT id, interests, region, expires_at
+    FROM guest_sessions
+    WHERE session_token = $1
+    LIMIT 1
+    FOR UPDATE
+    `,
+    [cleanToken]
+  )
+
+  const guest = result.rows[0]
+
+  if (!guest) return null
+
+  if (new Date(guest.expires_at) < new Date()) {
+    await client.query(
+      `DELETE FROM guest_sessions WHERE session_token = $1`,
+      [cleanToken]
+    )
+
+    return null
+  }
+
+  return {
+    ...guest,
+    interests: Array.isArray(guest.interests) ? guest.interests : [],
+    region: guest.region ?? null,
+  }
+}
+
+export async function createGuestSession(
+  interests?: string[],
+  region?: string
+) {
+  const id = crypto.randomUUID()
+  const sessionToken = generateSessionToken()
+  const expiresAt = new Date(Date.now() + SESSION_EXPIRY_MS)
+
+  await pool.query(
+    `
+    INSERT INTO guest_sessions (id, session_token, interests, region, created_at, expires_at)
+    VALUES ($1, $2, $3, $4, NOW(), $5)
+    `,
+    [
+      id,
+      sessionToken,
+      normalizeStringArray(interests),
+      normalizeRegion(region),
+      expiresAt,
+    ]
+  )
+
+  return { sessionToken }
+}
 
 // ================= SIGNUP =================
 export async function signup(
@@ -28,64 +118,101 @@ export async function signup(
   password: string,
   device?: DeviceInfo
 ) {
-  const existing = await pool.query(
-    `SELECT id FROM app_users WHERE email = $1 LIMIT 1`,
-    [email]
-  )
-
-  if (existing.rows.length > 0) {
-    throw new Error('User already exists')
-  }
-
   const passwordHash = await hashPassword(password)
+  const client = await pool.connect()
 
-  const userResult = await pool.query<UserRecord>(
-    `
-    INSERT INTO app_users (email, password_hash, location, is_active, is_email_verified)
-    VALUES ($1, $2, $3, true, false)
-    RETURNING *
-    `,
-    [email, passwordHash, device?.location ?? null]
-  )
+  try {
+    await client.query('BEGIN')
 
-  const user = userResult.rows[0]
+    const guest = await getLockedValidGuestByToken(client, device?.guestToken)
+    const providedInterests = normalizeStringArray(device?.interests)
+    const providedLocation = normalizeRegion(device?.location)
+    const profileInterests = providedInterests.length
+      ? providedInterests
+      : guest?.interests ?? []
+    const signupLocation = providedLocation ?? guest?.region ?? null
 
-  await pool.query(
-    `
-    INSERT INTO user_profiles (user_id, interests, created_at, updated_at)
-    VALUES ($1, $2, NOW(), NOW())
-    `,
-    [user.id, device?.interests ?? []]
-  )
-
-  const sessionToken = generateSessionToken()
-
-  await pool.query(
-    `
-    INSERT INTO sessions (
-      user_id, session_token, expires_at,
-      device_name, device_os, ip_address
+    const existing = await client.query(
+      `SELECT id FROM app_users WHERE email = $1 LIMIT 1`,
+      [email]
     )
-    VALUES ($1, $2, $3, $4, $5, $6)
-    `,
-    [
-      user.id,
-      sessionToken,
-      new Date(Date.now() + SESSION_EXPIRY_MS),
-      device?.deviceName ?? null,
-      device?.deviceOS ?? null,
-      device?.ipAddress ?? null,
-    ]
-  )
 
-  return {
-    user: {
-      id: user.id,
-      email: user.email,
-      phone: user.phone ?? null,
-      location: user.location ?? null,
-    },
-    sessionToken,
+    if (existing.rows.length > 0) {
+      throw new Error('User already exists')
+    }
+
+    const userResult = await client.query<UserRecord>(
+      `
+      INSERT INTO app_users (email, password_hash, location, is_active, is_email_verified)
+      VALUES ($1, $2, $3, true, false)
+      RETURNING *
+      `,
+      [email, passwordHash, signupLocation]
+    )
+
+    const user = userResult.rows[0]
+
+    await client.query(
+      `
+      INSERT INTO user_profiles (user_id, interests, created_at, updated_at)
+      VALUES ($1, $2, NOW(), NOW())
+      `,
+      [user.id, profileInterests]
+    )
+
+    if (guest) {
+      await client.query(
+        `
+        UPDATE user_events
+        SET user_id = $1,
+            guest_id = NULL
+        WHERE guest_id = $2
+        `,
+        [user.id, guest.id]
+      )
+
+      await client.query(
+        `DELETE FROM guest_sessions WHERE id = $1`,
+        [guest.id]
+      )
+    }
+
+    const sessionToken = generateSessionToken()
+
+    await client.query(
+      `
+      INSERT INTO sessions (
+        user_id, session_token, expires_at,
+        device_name, device_os, ip_address
+      )
+      VALUES ($1, $2, $3, $4, $5, $6)
+      `,
+      [
+        user.id,
+        sessionToken,
+        new Date(Date.now() + SESSION_EXPIRY_MS),
+        device?.deviceName ?? null,
+        device?.deviceOS ?? null,
+        device?.ipAddress ?? null,
+      ]
+    )
+
+    await client.query('COMMIT')
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        phone: user.phone ?? null,
+        location: user.location ?? null,
+      },
+      sessionToken,
+    }
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
   }
 }
 

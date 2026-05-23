@@ -16,6 +16,7 @@ const authLimiter = (0, express_rate_limit_1.default)({
     legacyHeaders: false,
 });
 const router = (0, express_1.Router)();
+router.post('/guest', authLimiter, auth_controller_1.guest);
 router.post('/signup', authLimiter, auth_controller_1.signup);
 router.post('/login', authLimiter, auth_controller_1.login);
 router.get('/me', auth_middleware_1.requireAuth, auth_controller_1.me);
