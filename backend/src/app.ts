@@ -9,6 +9,8 @@ import eventsRoutes from './routes/events.routes'
 import profileRoutes from './routes/profile.route'
 import deleteAccountRoutes from './routes/deleteAccount.route'
 import articleRoutes from './routes/article.route'
+import bookmarkRoutes from './routes/bookmarks.routes'
+import notificationRoutes from './routes/notifications.routes'
 
 import { ingestRSSFeeds } from './services/rssIngest.service'
 
@@ -45,6 +47,8 @@ app.use('/news', newsRoutes)
 app.use('/events', eventsRoutes)
 app.use('/profile', profileRoutes)
 app.use('/article', articleRoutes)
+app.use('/bookmarks', bookmarkRoutes)
+app.use('/notifications', notificationRoutes)
 
 app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok' })

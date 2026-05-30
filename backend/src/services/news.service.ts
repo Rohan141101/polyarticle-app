@@ -400,6 +400,38 @@ async function getRecentSeenCategoryCounts(userId: string): Promise<Record<strin
   return counts
 }
 
+async function getRecentGuestSeenCategoryCounts(guestId: string): Promise<Record<string, number>> {
+  const result = await pool.query<{ category: string | null; count: string }>(
+    `
+    SELECT a.category, COUNT(*)::text AS count
+    FROM guest_seen gs
+    JOIN articles a ON a.id = gs.article_id
+    WHERE gs.guest_id = $1
+      AND gs.seen_at > NOW() - INTERVAL '7 days'
+    GROUP BY a.category
+    `,
+    [guestId]
+  )
+
+  const counts: Record<string, number> = {}
+  for (const row of result.rows) {
+    if (!row.category) continue
+    counts[row.category] = parseInt(row.count, 10)
+  }
+  return counts
+}
+
+async function markGuestArticlesSeen(guestId: string, articles: Article[]): Promise<void> {
+  if (!articles.length) return
+  const ids = articles.map(a => a.id)
+  await pool.query(
+    `INSERT INTO guest_seen (guest_id, article_id)
+     SELECT $1, unnest($2::uuid[])
+     ON CONFLICT DO NOTHING`,
+    [guestId, ids]
+  )
+}
+
 async function resetSeenIfNeeded(userId: string): Promise<void> {
   const result = await pool.query<{ count: string }>(
     `
@@ -612,10 +644,14 @@ export async function getNewsForGuest(
   page: number = 1,
   limit: number = 10,
   category?: string,
-  _fresh: boolean = false
+  fresh: boolean = false
 ): Promise<Article[]> {
   if (category && category !== 'For You') {
     return getCategoryNews(category, page, limit)
+  }
+
+  if (fresh) {
+    await pool.query(`DELETE FROM guest_seen WHERE guest_id = $1`, [guestId])
   }
 
   const profile = await getGuestProfile(guestId)
@@ -627,10 +663,11 @@ export async function getNewsForGuest(
     SELECT id, title, summary, image_url, url, source, published_at, category, country
     FROM articles
     WHERE ${READY_ARTICLE_WHERE}
+      AND id NOT IN (SELECT article_id FROM guest_seen WHERE guest_id = $1)
     ORDER BY published_at DESC
-    LIMIT $1
+    LIMIT $2
     `,
-    [poolSize]
+    [guestId, poolSize]
   )
 
   const candidates = candidatesResult.rows
@@ -640,7 +677,7 @@ export async function getNewsForGuest(
   }
 
   const trendingScores = await getTrendingScores(candidates.map(article => article.id))
-  const recentSeenCounts: Record<string, number> = {}
+  const recentSeenCounts = await getRecentGuestSeenCategoryCounts(guestId)
 
   const scored = candidates
     .map(article => ({
@@ -655,7 +692,9 @@ export async function getNewsForGuest(
     }))
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
 
-  return finalizeFeed(scored, limit, recentSeenCounts, trendingScores)
+  const feed = finalizeFeed(scored, limit, recentSeenCounts, trendingScores)
+  await markGuestArticlesSeen(guestId, feed)
+  return feed
 }
 
 export async function getRegionalNews(

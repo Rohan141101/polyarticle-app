@@ -4,6 +4,7 @@ dns.setDefaultResultOrder("ipv4first")
 
 import app from "./app"
 import { startRSSCron } from "./jobs/rss.cron"
+import { startNotificationCron } from "./jobs/notifications.cron"
 import cron from 'node-cron'
 import { ingestRSSFeeds } from './services/rssIngest.service'
 
@@ -13,6 +14,7 @@ const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 NewsDeck server running on port ${PORT}`)
 
   startRSSCron()
+  startNotificationCron()
 })
 
 function shutdown() {

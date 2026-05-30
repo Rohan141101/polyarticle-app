@@ -19,7 +19,7 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
   next()
 }
 
-router.get('/admin/rss-ingest', async (_req: Request, res: Response) => {
+router.get('/admin/rss-ingest', auth, requireAdmin, async (_req: Request, res: Response) => {
   try {
     const result = await ingestRSSFeeds()
     return res.json(result)
